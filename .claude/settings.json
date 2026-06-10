@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "shackcontrol": {
+      "command": "node",
+      "args": ["mcp/index.js"],
+      "env": {
+        "SHACK_URL": "http://192.168.1.155:3000",
+        "SHACK_USER": "wb0z",
+        "SHACK_PASS": "Jasonar-8806"
+      }
+    }
+  }
+}

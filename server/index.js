@@ -17,6 +17,7 @@ const bodyParser = require('body-parser');
 const storage = require('./storage');
 const setup = require('./setup');
 const websocket = require('./websocket');
+const logbuffer = require('./services/logbuffer');
 
 // Device services
 const serial = require('./services/serial');
@@ -32,8 +33,11 @@ const deviceRoutes = require('./routes/devices');
 const configRoutes = require('./routes/config');
 const themeRoutes = require('./routes/themes');
 const settingsRoutes = require('./routes/settings');
+const adminRoutes = require('./routes/admin');
+const lanOnly = require('./middleware/lan-only');
 
-// 1) Bootstrap data files / admin user
+// 1) Bootstrap: capture logs first, then init data files / admin user
+logbuffer.init();
 setup.run();
 
 const cfg = storage.getConfig();
@@ -55,6 +59,9 @@ app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
+
+// Admin endpoints — LAN-only IP gate applied first
+app.use('/api/admin', lanOnly, adminRoutes);
 
 // Static frontend
 const clientDir = path.join(__dirname, '..', 'client');
