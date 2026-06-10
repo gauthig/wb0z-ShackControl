@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "compass-test",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "5173", "client"],
+      "port": 5173
+    }
+  ]
+}

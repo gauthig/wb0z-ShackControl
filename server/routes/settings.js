@@ -17,7 +17,7 @@ router.use(auth.requireAuth, auth.requireRole('admin'));
 /** Build the flattened settings object the UI form binds to. */
 function buildSettings(c) {
   const ser = (c.serial && c.serial.palstar_la1k_amp) || {};
-  const rot = (c.udp && c.udp.pst_rotator) || {};
+  const rot = (c.serial && c.serial.erc_mini_rotator) || {};
   const tun = (c.udp && c.udp.palstar_hf_auto_tuner) || {};
   const ha = c.home_assistant || {};
   const ent = ha.entities || {};
@@ -47,9 +47,8 @@ function buildSettings(c) {
     },
     rotator: {
       enabled: !!rot.enabled,
-      send_address: rot.send_address,
-      send_port: rot.send_port,
-      listen_port: rot.listen_port
+      serial_port: rot.serial_port || 'COM5',
+      baud_rate: rot.baud_rate || 9600
     },
     tuner: {
       enabled: !!tun.enabled,
@@ -94,8 +93,6 @@ function validate(s) {
   const ports = [
     ['General · Server port', s.general && toInt(s.general.http_port)],
     ['MQTT · Broker port', s.mqtt && toInt(s.mqtt.port)],
-    ['Rotator · Command port', s.rotator && toInt(s.rotator.send_port)],
-    ['Rotator · Status port', s.rotator && toInt(s.rotator.listen_port)],
     ['Tuner · Command port', s.tuner && toInt(s.tuner.send_port)],
     ['Tuner · Status port', s.tuner && toInt(s.tuner.listen_port)],
     ['FlexRadio · Discovery port', s.flexradio && toInt(s.flexradio.discovery_port)],
@@ -106,17 +103,20 @@ function validate(s) {
   });
 
   const ip = /^(\d{1,3})(\.\d{1,3}){3}$/;
-  [['Rotator · IP address', s.rotator && s.rotator.send_address],
-   ['Tuner · IP address', s.tuner && s.tuner.send_address]].forEach(([label, v]) => {
-    if (v && !ip.test(v)) errors.push(`${label} must be a valid IPv4 address.`);
-  });
+  if (s.tuner && s.tuner.send_address && !ip.test(s.tuner.send_address)) {
+    errors.push('Tuner · IP address must be a valid IPv4 address.');
+  }
 
   if (s.mqtt && s.mqtt.enabled && !(s.mqtt.broker && String(s.mqtt.broker).trim())) {
     errors.push('MQTT · Broker address is required when MQTT is enabled.');
   }
   if (s.serial) {
     const b = toInt(s.serial.baud_rate);
-    if (b !== undefined && (!Number.isInteger(b) || b <= 0)) errors.push('Serial · Baud rate must be a positive number.');
+    if (b !== undefined && (!Number.isInteger(b) || b <= 0)) errors.push('Amp Serial · Baud rate must be a positive number.');
+  }
+  if (s.rotator) {
+    const b = toInt(s.rotator.baud_rate);
+    if (b !== undefined && (!Number.isInteger(b) || b <= 0)) errors.push('Rotator · Baud rate must be a positive number.');
   }
   return errors;
 }
@@ -125,9 +125,10 @@ function validate(s) {
 function applySettings(c, s) {
   c.site = c.site || {};
   c.mqtt = c.mqtt || {};
-  c.serial = c.serial || {}; c.serial.palstar_la1k_amp = c.serial.palstar_la1k_amp || {};
+  c.serial = c.serial || {};
+  c.serial.palstar_la1k_amp = c.serial.palstar_la1k_amp || {};
+  c.serial.erc_mini_rotator = c.serial.erc_mini_rotator || {};
   c.udp = c.udp || {};
-  c.udp.pst_rotator = c.udp.pst_rotator || {};
   c.udp.palstar_hf_auto_tuner = c.udp.palstar_hf_auto_tuner || {};
   c.flexradio = c.flexradio || {};
   c.home_assistant = c.home_assistant || {};
@@ -166,10 +167,9 @@ function applySettings(c, s) {
     setNum(c.serial.palstar_la1k_amp, 'baud_rate', s.serial.baud_rate);
   }
   if (s.rotator) {
-    c.udp.pst_rotator.enabled = !!s.rotator.enabled;
-    setIf(c.udp.pst_rotator, 'send_address', s.rotator.send_address);
-    setNum(c.udp.pst_rotator, 'send_port', s.rotator.send_port);
-    setNum(c.udp.pst_rotator, 'listen_port', s.rotator.listen_port);
+    c.serial.erc_mini_rotator.enabled = !!s.rotator.enabled;
+    setIf(c.serial.erc_mini_rotator, 'serial_port', s.rotator.serial_port);
+    setNum(c.serial.erc_mini_rotator, 'baud_rate', s.rotator.baud_rate);
   }
   if (s.tuner) {
     c.udp.palstar_hf_auto_tuner.enabled = !!s.tuner.enabled;

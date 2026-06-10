@@ -47,21 +47,44 @@
 
       <!-- Rotator -->
       <div class="card span-3">
-        <h3>🧭 PST Rotator</h3>
+        <h3>🧭 Antenna Rotator <span class="tag off" id="rotConn" style="margin-left:auto">OFFLINE</span></h3>
         <div class="compass-wrap">
           <div class="compass">
             <svg viewBox="0 0 200 200">
+              <!-- Compass ring -->
               <circle cx="100" cy="100" r="92" fill="none" stroke="var(--border)" stroke-width="2"/>
               <circle cx="100" cy="100" r="78" fill="var(--surface2)" stroke="var(--border)" stroke-width="1"/>
-              <text x="100" y="24" text-anchor="middle" fill="var(--text-muted)" font-size="12">N</text>
+              <!-- Cardinal labels -->
+              <text x="100" y="24"  text-anchor="middle" fill="var(--text-muted)" font-size="12">N</text>
               <text x="180" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">E</text>
               <text x="100" y="188" text-anchor="middle" fill="var(--text-muted)" font-size="12">S</text>
-              <text x="20" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">W</text>
-              <g class="needle" id="needle">
-                <polygon points="100,18 108,100 100,112 92,100" fill="var(--primary)"/>
-                <polygon points="100,182 108,100 100,88 92,100" fill="var(--text-muted)"/>
+              <text x="20"  y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">W</text>
+              <!--
+                HexBeam beam pattern — rotated by current azimuth via JS.
+                At 0° the beam points North (up). Geometry at 0°:
+                  Centre tip : (100,  8)   r≈92 along N
+                  Left  edge : ( 35, 35)   r=92 at −45° from N
+                  Right edge : (165, 35)   r=92 at +45° from N
+                  Sector arc : large-arc=0, sweep=1 (clockwise, 90°)
+              -->
+              <g id="needle">
+                <!-- Filled beam sector (translucent) -->
+                <path d="M 100 100 L 35 35 A 92 92 0 0 1 165 35 Z"
+                      fill="var(--primary)" fill-opacity="0.18"/>
+                <!-- Left beam-edge leg (−45°) -->
+                <line x1="100" y1="100" x2="35" y2="35"
+                      stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
+                <!-- Right beam-edge leg (+45°) -->
+                <line x1="100" y1="100" x2="165" y2="35"
+                      stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
+                <!-- Centre beam line (exact heading) — solid, slightly thicker -->
+                <line x1="100" y1="100" x2="100" y2="10"
+                      stroke="var(--primary)" stroke-width="2.5"/>
+                <!-- Arrowhead at beam tip -->
+                <polygon points="100,6 105,18 95,18" fill="var(--primary)"/>
               </g>
-              <circle cx="100" cy="100" r="6" fill="var(--accent)"/>
+              <!-- Centre pivot dot -->
+              <circle cx="100" cy="100" r="5" fill="var(--accent)"/>
             </svg>
           </div>
           <div class="compass-readout"><span id="azReadout">0</span>°</div>
@@ -72,6 +95,15 @@
           <input class="ctl" id="azInput" type="number" min="0" max="360" value="0" />
           <button class="btn primary ctl sm" data-act="rotset">Go</button>
           <button class="btn danger ctl sm" data-act="rotstop">Stop</button>
+        </div>
+        <label style="margin-top:10px">Manual Jog</label>
+        <div class="btn-group">
+          <button class="btn ctl" id="jogCCWBtn" data-jog="ccw"
+                  style="user-select:none;-webkit-user-select:none"
+                  title="Hold to rotate CCW — releases automatically at 0°">◀ CCW</button>
+          <button class="btn ctl" id="jogCWBtn"  data-jog="cw"
+                  style="user-select:none;-webkit-user-select:none"
+                  title="Hold to rotate CW — releases automatically at 360°">CW ▶</button>
         </div>
         <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>

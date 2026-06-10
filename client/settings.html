@@ -113,17 +113,32 @@
           </div>
         </div>
 
-        <!-- PST Rotator -->
+        <!-- ERC-Mini Rotator -->
         <div class="card span-6">
-          <h3>🧭 PST Rotator (UDP)</h3>
+          <h3>🧭 Antenna Rotator — EA4TX ERC-Mini (Serial)</h3>
           <label class="row" style="align-items:center;gap:8px">
             <input type="checkbox" id="rotator_enabled" style="width:auto" /> <span>Rotator Enabled</span>
           </label>
-          <label>IP Address</label>
-          <input id="rotator_send_address" placeholder="127.0.0.1" />
+          <p class="muted" style="font-size:12px;margin:4px 0 10px">
+            Direct serial connection to the EA4TX ERC-Mini controller (Yaesu GS-232A protocol).
+            PST Rotator software is no longer required.
+          </p>
           <div class="row">
-            <div><label>Command Port (send)</label><input id="rotator_send_port" type="number" min="1" max="65535" /></div>
-            <div><label>Status Port (listen)</label><input id="rotator_listen_port" type="number" min="1" max="65535" /></div>
+            <div>
+              <label>COM Port</label>
+              <input id="rotator_serial_port" placeholder="COM5" />
+            </div>
+            <div>
+              <label>Baud Rate</label>
+              <select id="rotator_baud_rate">
+                <option value="1200">1200</option>
+                <option value="2400">2400</option>
+                <option value="4800">4800</option>
+                <option value="9600" selected>9600</option>
+                <option value="19200">19200</option>
+                <option value="38400">38400</option>
+              </select>
+            </div>
           </div>
         </div>
 

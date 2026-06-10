@@ -155,6 +155,7 @@
     const r = s.rotator || {};
     document.getElementById('azReadout').textContent = Math.round(r.azimuth || 0);
     document.getElementById('needle').setAttribute('transform', `rotate(${r.azimuth || 0} 100 100)`);
+    setTag('rotConn', r.connected, 'ONLINE', 'OFFLINE');
 
     // Amp
     const a = s.amp || {};
@@ -274,6 +275,49 @@
     try { await API.post('/api/devices/rotator/azimuth', { degrees: Number(e.target.value) }); }
     catch (err) { alert(err.message); }
   });
+
+  /* ---------- Rotator jog buttons (hold-to-move) ----------
+   * While the button is held the client sends a heartbeat every 800 ms.
+   * The server's 2-second watchdog auto-stops the rotator if the client
+   * disappears (browser close, network drop, etc.).
+   * Works with mouse and touch via Pointer Events.
+   */
+  (function () {
+    let _jogTimer = null;
+    let _activeDir = null;
+
+    function startJog(dir) {
+      if (!canControl || _activeDir === dir) return;
+      _activeDir = dir;
+      function beat() {
+        API.post('/api/devices/rotator/jog', { dir }).catch(() => {});
+      }
+      beat();
+      _jogTimer = setInterval(beat, 800);
+    }
+
+    function stopJog() {
+      if (!_activeDir) return;
+      _activeDir = null;
+      clearInterval(_jogTimer);
+      _jogTimer = null;
+      API.post('/api/devices/rotator/jog', { dir: 'stop' }).catch(() => {});
+    }
+
+    ['jogCCWBtn', 'jogCWBtn'].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const dir = btn.dataset.jog;
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        btn.setPointerCapture(e.pointerId);
+        startJog(dir);
+      });
+      btn.addEventListener('pointerup', stopJog);
+      btn.addEventListener('pointercancel', stopJog);
+      btn.addEventListener('pointerleave', stopJog);
+    });
+  })();
 
   /* ---------- Change password modal ---------- */
   const pwModal = document.getElementById('pwModal');

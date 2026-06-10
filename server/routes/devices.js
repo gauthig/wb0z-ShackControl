@@ -11,6 +11,7 @@ const state = require('../services/state');
 
 const serial = require('../services/serial');
 const udp = require('../services/udp');
+const rotator = require('../services/rotator');
 const flex = require('../services/flexradio');
 const mqtt = require('../services/mqtt');
 const homeassistant = require('../services/homeassistant');
@@ -48,14 +49,29 @@ router.post('/amp/antenna', auth.requireControl, (req, res) => {
   res.json({ ok: true, antenna: n });
 });
 
-// Rotator (PST)
+// Rotator (ERC-Mini serial)
 router.post('/rotator/azimuth', auth.requireControl, (req, res) => {
-  const d = udp.setAzimuth(Number(req.body.degrees));
+  const d = rotator.setAzimuth(Number(req.body.degrees));
   res.json({ ok: true, target: d });
 });
 router.post('/rotator/stop', auth.requireControl, (req, res) => {
-  udp.stopRotator();
+  rotator.stopRotator();
   res.json({ ok: true });
+});
+// Manual jog — hold a direction ('cw' | 'ccw') or send 'stop'.
+// Client should call this every ~800ms while the button is held; the server-side
+// watchdog auto-stops the rotator if no heartbeat arrives within 2 s.
+router.post('/rotator/jog', auth.requireControl, (req, res) => {
+  const dir = String(req.body.dir || '').toLowerCase();
+  if (dir === 'stop') {
+    rotator.stopRotator();
+    return res.json({ ok: true, moving: false });
+  }
+  if (dir !== 'cw' && dir !== 'ccw') {
+    return res.status(400).json({ error: 'dir must be cw, ccw, or stop' });
+  }
+  rotator.jog(dir);
+  res.json({ ok: true, moving: true, dir });
 });
 
 // Tuner (Palstar HF-Auto)

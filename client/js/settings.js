@@ -19,7 +19,7 @@
     mqtt: { enabled: 'bool', broker: 'text', port: 'num', username: 'text', password: 'text', client_id: 'text', topic_prefix: 'text', publish_interval_sec: 'num' },
     serial: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
     flexradio: { enabled: 'bool', host_mode: 'text', host: 'text', discovery_port: 'num', tcp_port: 'num' },
-    rotator: { enabled: 'bool', send_address: 'text', send_port: 'num', listen_port: 'num' },
+    rotator: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
     tuner: { enabled: 'bool', send_address: 'text', send_port: 'num', listen_port: 'num' },
     home_assistant: { enabled: 'bool', base_url: 'text', token: 'text', topic_prefix: 'text', power_supply_id: 'text', amplifier_id: 'text', radio_relay_id: 'text', desk_light_1_id: 'text', desk_light_2_id: 'text' }
   };
@@ -61,12 +61,10 @@
     const ip = /^(\d{1,3})(\.\d{1,3}){3}$/;
     const portFields = [
       ['Server port', s.general.http_port], ['MQTT port', s.mqtt.port],
-      ['Rotator command port', s.rotator.send_port], ['Rotator status port', s.rotator.listen_port],
       ['Tuner command port', s.tuner.send_port], ['Tuner status port', s.tuner.listen_port],
       ['FlexRadio discovery port', s.flexradio.discovery_port], ['FlexRadio TCP port', s.flexradio.tcp_port]
     ];
     portFields.forEach(([label, v]) => { if (!isPort(v)) errs.push(`${label} must be 1–65535.`); });
-    if (s.rotator.send_address && !ip.test(s.rotator.send_address)) errs.push('Rotator IP address is invalid.');
     if (s.tuner.send_address && !ip.test(s.tuner.send_address)) errs.push('Tuner IP address is invalid.');
     if (s.mqtt.enabled && !s.mqtt.broker) errs.push('MQTT broker is required when MQTT is enabled.');
     if (s.serial.baud_rate !== '' && (!Number.isInteger(s.serial.baud_rate) || s.serial.baud_rate <= 0)) errs.push('Baud rate must be positive.');

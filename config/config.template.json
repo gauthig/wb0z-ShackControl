@@ -102,6 +102,11 @@
     }
   },
   "serial": {
+    "erc_mini_rotator": {
+      "enabled": true,
+      "serial_port": "COM5",
+      "baud_rate": 9600
+    },
     "palstar_la1k_amp": {
       "enabled": true,
       "serial_port": "COM7",
