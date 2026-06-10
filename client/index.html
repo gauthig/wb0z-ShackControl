@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shack Control — Sign In</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="login-card" id="loginForm">
+      <div class="brand-logo">📡</div>
+      <h1 id="siteTitle">Shack Control</h1>
+      <p class="sub">Ham Radio Equipment Control · Sign in to continue</p>
+
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" autofocus required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+      <div style="height:16px"></div>
+      <button class="btn primary block" type="submit" id="loginBtn">Sign In</button>
+      <div class="error-msg" id="error"></div>
+    </form>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

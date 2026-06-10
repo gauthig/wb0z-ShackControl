@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "username": "wb0z",
+      "displayName": "WB0Z",
+      "role": "admin",
+      "passwordHash": "$2a$10$NgwY.pkmI8dKNQc0AHOiT.5rkCVY8w/ovi5eXPYcydgq1/fWnY4ia",
+      "disabled": false,
+      "createdAt": "2026-06-06T00:00:23.847Z",
+      "lastLogin": "2026-06-06T00:05:20.323Z"
+    }
+  ]
+}

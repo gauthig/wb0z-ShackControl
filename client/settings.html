@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shack Control — Settings</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!-- Top bar (matches dashboard) -->
+  <div class="topbar">
+    <span class="title">📡 <span class="callsign" id="callsign">WB0Z</span> <span id="siteName">Shack Control</span></span>
+    <span class="pill">⚙️ Settings</span>
+    <div class="spacer"></div>
+    <span class="role-badge" id="roleBadge">—</span>
+    <span class="pill" id="userName">—</span>
+    <button class="btn sm" id="backBtn">← Dashboard</button>
+    <button class="btn sm" id="logoutBtn">Logout</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="nav-tabs">
+    <button onclick="location.href='/dashboard'">Dashboard</button>
+    <button class="active">Settings</button>
+  </div>
+
+  <div class="container">
+    <form id="settingsForm">
+      <div class="grid">
+
+        <!-- General -->
+        <div class="card span-6">
+          <h3>🖥️ General</h3>
+          <label>Site Name</label>
+          <input id="general_site_name" />
+          <label>Station Callsign</label>
+          <input id="general_station_callsign" />
+          <div class="row">
+            <div>
+              <label>Server / HTTP Port</label>
+              <input id="general_http_port" type="number" min="1" max="65535" />
+            </div>
+            <div>
+              <label>Bind Address</label>
+              <input id="general_bind_address" placeholder="0.0.0.0" />
+            </div>
+          </div>
+          <label>Login Token Expiry</label>
+          <input id="general_jwt_expiry" placeholder="12h" />
+          <p class="muted" style="font-size:12px;margin-top:8px">WebSocket shares the server port (path <code>/ws</code>) — no separate port required.</p>
+        </div>
+
+        <!-- MQTT -->
+        <div class="card span-6">
+          <h3>📨 MQTT (Home Assistant Broker)</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="mqtt_enabled" style="width:auto" /> <span>MQTT Enabled</span>
+          </label>
+          <div class="row">
+            <div style="flex:2"><label>Broker URL / IP</label><input id="mqtt_broker" placeholder="192.168.1.54" /></div>
+            <div><label>Port</label><input id="mqtt_port" type="number" min="1" max="65535" /></div>
+          </div>
+          <div class="row">
+            <div><label>Username</label><input id="mqtt_username" autocomplete="off" /></div>
+            <div><label>Password</label><input id="mqtt_password" type="password" autocomplete="new-password" /></div>
+          </div>
+          <div class="row">
+            <div><label>Client ID</label><input id="mqtt_client_id" /></div>
+            <div><label>Publish Interval (s)</label><input id="mqtt_publish_interval_sec" type="number" min="1" /></div>
+          </div>
+          <label>Topic Prefix</label>
+          <input id="mqtt_topic_prefix" placeholder="hamcontrol/global" />
+        </div>
+
+        <!-- Serial -->
+        <div class="card span-6">
+          <h3>🔌 Serial — Palstar LA-1K Amp</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="serial_enabled" style="width:auto" /> <span>Serial Control Enabled</span>
+          </label>
+          <div class="row">
+            <div><label>COM Port</label><input id="serial_serial_port" placeholder="COM7" /></div>
+            <div>
+              <label>Baud Rate</label>
+              <select id="serial_baud_rate">
+                <option>1200</option><option>2400</option><option>4800</option>
+                <option>9600</option><option>19200</option><option>38400</option>
+                <option>57600</option><option>115200</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- FlexRadio -->
+        <div class="card span-6">
+          <h3>📻 FlexRadio 8600</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="flexradio_enabled" style="width:auto" /> <span>FlexRadio Enabled</span>
+          </label>
+          <div class="row">
+            <div>
+              <label>Host Mode</label>
+              <select id="flexradio_host_mode">
+                <option value="automatic">Automatic (discovery)</option>
+                <option value="manual">Manual (fixed IP)</option>
+              </select>
+            </div>
+            <div><label>Radio IP (manual)</label><input id="flexradio_host" placeholder="192.168.1.x" /></div>
+          </div>
+          <div class="row">
+            <div><label>Discovery Port (UDP)</label><input id="flexradio_discovery_port" type="number" min="1" max="65535" /></div>
+            <div><label>TCP Command Port</label><input id="flexradio_tcp_port" type="number" min="1" max="65535" /></div>
+          </div>
+        </div>
+
+        <!-- PST Rotator -->
+        <div class="card span-6">
+          <h3>🧭 PST Rotator (UDP)</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="rotator_enabled" style="width:auto" /> <span>Rotator Enabled</span>
+          </label>
+          <label>IP Address</label>
+          <input id="rotator_send_address" placeholder="127.0.0.1" />
+          <div class="row">
+            <div><label>Command Port (send)</label><input id="rotator_send_port" type="number" min="1" max="65535" /></div>
+            <div><label>Status Port (listen)</label><input id="rotator_listen_port" type="number" min="1" max="65535" /></div>
+          </div>
+        </div>
+
+        <!-- HF-Auto Tuner -->
+        <div class="card span-6">
+          <h3>📶 Palstar HF-Auto Tuner (UDP)</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="tuner_enabled" style="width:auto" /> <span>Tuner Enabled</span>
+          </label>
+          <label>IP Address</label>
+          <input id="tuner_send_address" placeholder="127.0.0.1" />
+          <div class="row">
+            <div><label>Command Port (send)</label><input id="tuner_send_port" type="number" min="1" max="65535" /></div>
+            <div><label>Status Port (listen)</label><input id="tuner_listen_port" type="number" min="1" max="65535" /></div>
+          </div>
+        </div>
+
+        <!-- Home Assistant -->
+        <div class="card span-12">
+          <h3>🏠 Home Assistant — Entities</h3>
+          <label class="row" style="align-items:center;gap:8px">
+            <input type="checkbox" id="home_assistant_enabled" style="width:auto" /> <span>Home Assistant Integration Enabled</span>
+          </label>
+          <div class="row">
+            <div style="flex:2"><label>HA Base URL</label><input id="home_assistant_base_url" placeholder="http://192.168.1.54:8123" /></div>
+            <div style="flex:3"><label>Long-Lived Access Token</label><input id="home_assistant_token" type="password" autocomplete="new-password" placeholder="leave blank to keep current token" /></div>
+          </div>
+          <p class="muted" style="font-size:12px;margin:4px 0 10px">
+            Power toggles call HA service actions (<code>switch.turn_on/off</code>) on the entities below.
+            Create a token in Home Assistant → Profile → <em>Long-Lived Access Tokens</em>.
+          </p>
+          <label>MQTT Topic Prefix (shared with MQTT)</label>
+          <input id="home_assistant_topic_prefix" placeholder="hamcontrol/global" />
+          <div class="row">
+            <div><label>Power Supply Entity ID</label><input id="home_assistant_power_supply_id" placeholder="switch.smart_plug" /></div>
+            <div><label>Amplifier Entity ID</label><input id="home_assistant_amplifier_id" placeholder="switch.smart_plug_2" /></div>
+            <div><label>Radio Relay Entity ID</label><input id="home_assistant_radio_relay_id" placeholder="switch.shelly1g4_..." /></div>
+          </div>
+          <div class="row">
+            <div><label>Desk Light 1 Entity ID</label><input id="home_assistant_desk_light_1_id" placeholder="light.desk_light_1" /></div>
+            <div><label>Desk Light 2 Entity ID</label><input id="home_assistant_desk_light_2_id" placeholder="light.desk_light_2" /></div>
+            <div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Save bar -->
+      <div class="card span-12" style="margin-top:16px;position:sticky;bottom:0">
+        <div class="row" style="align-items:center">
+          <div style="flex:3">
+            <div class="ok-msg" id="okMsg"></div>
+            <div class="error-msg" id="errMsg"></div>
+          </div>
+          <div style="flex:1;text-align:right;min-width:200px">
+            <button class="btn" type="button" id="reloadBtn">Reload</button>
+            <button class="btn primary" type="submit" id="saveBtn">Save Settings</button>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">
+          ⚠️ Connection &amp; hardware changes (ports, COM, IPs, MQTT) take effect after a server restart.
+        </p>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

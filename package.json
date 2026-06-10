@@ -1,0 +1,26 @@
+{
+  "name": "ham-radio-web-app",
+  "version": "1.0.0",
+  "description": "Standalone web application for controlling a ham radio station (FlexRadio 8600, Palstar LA-1K amp, PST Rotator, Palstar HF-Auto tuner) on Windows 11. Replaces a Node-RED dashboard.",
+  "author": "WB0Z Shack Control",
+  "license": "MIT",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "setup": "node server/setup.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mqtt": "^5.7.0",
+    "serialport": "^12.0.0",
+    "ws": "^8.17.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

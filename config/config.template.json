@@ -1,0 +1,317 @@
+{
+  "site": {
+    "site_name": "WB0Z - Flex 8600",
+    "station_callsign": "WB0Z",
+    "http_port": 3000,
+    "bind_address": "0.0.0.0",
+    "jwt_secret": "CHANGE_ME_TO_A_LONG_RANDOM_STRING",
+    "jwt_expiry": "12h"
+  },
+  "flexradio": {
+    "enabled": true,
+    "name": "Flexradio8600",
+    "host_mode": "automatic",
+    "host": "",
+    "discovery_port": 4992,
+    "station_name": "HamControl",
+    "slice_mode": "headless",
+    "slice_name": "A",
+    "staleness_timeout_ms": 15000,
+    "watchdog_interval_sec": 5,
+    "subscriptions": [
+      "client bind client_id={Client_ID}",
+      "sub client all",
+      "sub slice all",
+      "sub meter all",
+      "sub tx all",
+      "sub apd all",
+      "sub radio all",
+      "sub radio pan"
+    ],
+    "dbm_to_watts_formula": "P(W) = 10 ^ ((dBm - 30) / 10)",
+    "amp_integration": {
+      "amp_on_rf_power": 30,
+      "amp_off_rf_power": 90,
+      "max_rf_power_with_amp": 50
+    },
+    "meters": {
+      "fan_rpm": {
+        "topic_regex": "RAD/[^/\\n]+/MAINFAN",
+        "display": "Fan RPM",
+        "min": 0,
+        "max": 2100
+      },
+      "swr": {
+        "topic_contains": "TX-/3/SWR",
+        "display": "SWR Linear",
+        "min": 0,
+        "max": 10
+      },
+      "fwd_power_dbm": {
+        "topic_contains": "TX-/1/FWDPWR",
+        "display": "FWD Watts",
+        "min": 0,
+        "max": 100,
+        "conversion": "dbm_to_watts"
+      },
+      "pa_temp": {
+        "topic_regex": "TX-/[^/\\n]+/PATEMP",
+        "display": "Temp",
+        "min": 0,
+        "max": 210
+      },
+      "pa_current": {
+        "topic_regex": "RAD/300/PACURRENT",
+        "global_var": "paCurrent"
+      },
+      "pa_volts": {
+        "topic_contains": "RAD/334/+13.8A",
+        "display": "Volts",
+        "min": 0,
+        "max": 15,
+        "global_var": "paVolts"
+      },
+      "mic_peak": {
+        "topic_regex": "COD-/[^/\\n]+/MICPEAK",
+        "display": "Mic Peak",
+        "min": -150,
+        "max": 20,
+        "unit": "dBFS"
+      },
+      "comp_peak": {
+        "topic_regex": "COD-/[^/\\n]+/COMPPEAK",
+        "display": "Comp Peak",
+        "min": -150,
+        "max": 20,
+        "unit": "dBFS"
+      },
+      "gain": {
+        "topic_regex": "COD-/[^/\\n]+/GAIN",
+        "display": "Gain",
+        "min": 0,
+        "max": 100,
+        "unit": "dB"
+      },
+      "sc_mic": {
+        "topic_regex": "COD-/[^/\\n]+/SC_MIC1",
+        "display": "SC Mic",
+        "min": -150,
+        "max": 20,
+        "unit": "dBFS"
+      }
+    }
+  },
+  "serial": {
+    "palstar_la1k_amp": {
+      "enabled": true,
+      "serial_port": "COM7",
+      "baud_rate": 9600,
+      "data_bits": 8,
+      "parity": "none",
+      "stop_bits": 1,
+      "newline": "\n",
+      "response_timeout_ms": 100,
+      "protocol": {
+        "poll_command": "AR1;\r\n",
+        "poll_interval_sec": 1,
+        "operate_command": "AM1;\r\n",
+        "standby_command": "AM2;\r\n",
+        "antenna_select_command": "AA{n};\r\n",
+        "frequency_command": "IF{freq_padded_8};\r\n",
+        "band_codes": {
+          "0": "",
+          "1": "160m",
+          "2": "80m",
+          "3": "40m",
+          "4": "20-15m",
+          "5": "12-10m"
+        },
+        "key_status_codes": {
+          "0": "Unkeyed",
+          "1": "TX Wait",
+          "2": "TX Amp",
+          "3": "---",
+          "4": "TX Bypass",
+          "5": "---",
+          "6": "Fault FQ",
+          "7": "Fault SWR",
+          "8": "Fault Temp"
+        }
+      }
+    }
+  },
+  "udp": {
+    "pst_rotator": {
+      "enabled": true,
+      "listen_port": 12001,
+      "send_address": "127.0.0.1",
+      "send_port": 12000,
+      "protocol": "udp4",
+      "poll_command": "<PST>AZ?</PST>",
+      "poll_interval_sec": 10,
+      "set_azimuth_command": "<PST><AZIMUTH>{degrees}</AZIMUTH></PST>",
+      "stop_command": "<PST><STOP>1</STOP></PST>",
+      "presets": [
+        {
+          "label": "Middle of US",
+          "value": 71
+        },
+        {
+          "label": "South America",
+          "value": 117
+        },
+        {
+          "label": "Caribbean",
+          "value": 100
+        },
+        {
+          "label": "Australia",
+          "value": 260
+        },
+        {
+          "label": "Malaysia",
+          "value": 314
+        },
+        {
+          "label": "Moscow",
+          "value": 14
+        },
+        {
+          "label": "Vancouver",
+          "value": 352
+        },
+        {
+          "label": "Winnipeg",
+          "value": 35
+        },
+        {
+          "label": "NY/Toronto",
+          "value": 66
+        }
+      ]
+    },
+    "palstar_hf_auto_tuner": {
+      "enabled": true,
+      "listen_port": 13080,
+      "send_address": "127.0.0.1",
+      "send_port": 12020,
+      "protocol": "udp4",
+      "broadcast": true,
+      "watchdog_timeout_sec": 20,
+      "commands": {
+        "select_antenna_1": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT1</CMD></EXT_CMD>",
+        "select_antenna_2": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT2</CMD></EXT_CMD>",
+        "select_antenna_3": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT3</CMD></EXT_CMD>",
+        "mode_bypass": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>BYPASS</CMD></EXT_CMD>",
+        "mode_auto": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>AUTO</CMD></EXT_CMD>",
+        "mode_manual": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>MANUAL</CMD></EXT_CMD>"
+      },
+      "antenna_rules": {
+        "1": {
+          "name": "HexBeam",
+          "force_mode": "bypass"
+        },
+        "2": {
+          "name": "EFHW",
+          "force_mode": "auto"
+        },
+        "3": {
+          "name": "ZeroFive",
+          "force_mode": "auto"
+        }
+      }
+    }
+  },
+  "mqtt": {
+    "enabled": true,
+    "name": "HA Mosquitto",
+    "broker": "192.168.1.54",
+    "port": 1883,
+    "username": "mqtt",
+    "password": "mqttJasonar-8806",
+    "client_id": "hamcontrol_web",
+    "keepalive": 60,
+    "birth_topic": "hamcontrol/status",
+    "birth_payload": "online",
+    "will_topic": "hamcontrol/status",
+    "will_payload": "offline",
+    "publish_interval_sec": 60,
+    "topic_prefix": "hamcontrol/global"
+  },
+  "home_assistant": {
+    "enabled": true,
+    "base_url": "http://192.168.1.54:8123",
+    "token": "",
+    "timeout_ms": 5000,
+    "polling_interval_sec": 15,
+    "confirm_delay_ms": 600,
+    "entities": {
+      "power_supply": {
+        "entity_id": "switch.smart_plug",
+        "description": "13.8V Power Supply smart plug",
+        "state_topic": ""
+      },
+      "amplifier": {
+        "entity_id": "switch.smart_plug_2",
+        "description": "Palstar LA-1K Amp smart plug",
+        "state_topic": ""
+      },
+      "radio_relay": {
+        "entity_id": "switch.shelly1g4_a085e3c0f2c0",
+        "description": "FlexRadio 8600 power relay",
+        "state_topic": ""
+      },
+      "desk_light_1": {
+        "entity_id": "light.desk_light_1",
+        "tx_color": [
+          255,
+          0,
+          0
+        ],
+        "rx_color": [
+          0,
+          255,
+          0
+        ],
+        "brightness_pct": 80
+      },
+      "desk_light_2": {
+        "entity_id": "light.desk_light_2",
+        "tx_color": [
+          255,
+          0,
+          0
+        ],
+        "rx_color": [
+          0,
+          255,
+          0
+        ],
+        "brightness_pct": 80
+      }
+    },
+    "power_sequencing": {
+      "power_on_sequence": [
+        "power_supply",
+        "radio_relay"
+      ],
+      "power_off_sequence": [
+        "radio_relay",
+        "amplifier",
+        "power_supply"
+      ],
+      "polling_interval_sec": 5
+    }
+  },
+  "automation": {
+    "amp_rf_power_limiting": {
+      "enabled": true
+    },
+    "tuner_antenna_rules": {
+      "enabled": true
+    },
+    "desk_light_tx_rx": {
+      "enabled": false
+    }
+  }
+}

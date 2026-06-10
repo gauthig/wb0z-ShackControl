@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shack Control — Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="title">📡 <span class="callsign" id="callsign">WB0Z</span> <span id="siteName">Shack Control</span></span>
+    <span class="pill"><span class="conn-dot" id="wsDot"></span> <span id="wsState">connecting…</span></span>
+    <div class="spacer"></div>
+    <span class="role-badge" id="roleBadge">—</span>
+    <span class="pill" id="userName">—</span>
+    <button class="btn sm" id="pwBtn">Change Password</button>
+    <button class="btn sm" id="logoutBtn">Logout</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="nav-tabs">
+    <button data-tab="dash" class="active">Dashboard</button>
+    <button data-tab="theme">Appearance</button>
+    <button data-tab="users" id="usersTab" style="display:none">Users</button>
+    <button id="settingsTab" style="display:none" onclick="location.href='/settings'">Settings</button>
+  </div>
+
+  <!-- ============ DASHBOARD TAB ============ -->
+  <div class="container tab-pane" id="tab-dash">
+    <div class="grid">
+
+      <!-- Power -->
+      <div class="card span-3">
+        <h3>⚡ Power <span class="tag off" id="haSyncTag" style="margin-left:auto" title="Home Assistant state sync">HA —</span></h3>
+        <div class="kv"><span class="k">13.8V Supply</span><span class="v"><span class="tag off" id="psTag">OFF</span></span></div>
+        <div class="kv"><span class="k">FlexRadio 8600</span><span class="v"><span class="tag off" id="radioTag">OFF</span></span></div>
+        <div class="kv"><span class="k">LA-1K Amp</span><span class="v"><span class="tag off" id="ampPwrTag">OFF</span></span></div>
+        <div class="controls col">
+          <button class="btn ctl" data-act="power" data-dev="supply">Toggle 13.8V Supply</button>
+          <button class="btn ctl" data-act="power" data-dev="radio">Toggle Radio Relay</button>
+          <button class="btn ctl" data-act="power" data-dev="amp">Toggle Amp Power</button>
+        </div>
+        <div class="muted" id="haSyncNote" style="font-size:11px;margin-top:8px">Reflects live Home Assistant device state.</div>
+        <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
+      </div>
+
+      <!-- Rotator -->
+      <div class="card span-3">
+        <h3>🧭 PST Rotator</h3>
+        <div class="compass-wrap">
+          <div class="compass">
+            <svg viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="92" fill="none" stroke="var(--border)" stroke-width="2"/>
+              <circle cx="100" cy="100" r="78" fill="var(--surface2)" stroke="var(--border)" stroke-width="1"/>
+              <text x="100" y="24" text-anchor="middle" fill="var(--text-muted)" font-size="12">N</text>
+              <text x="180" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">E</text>
+              <text x="100" y="188" text-anchor="middle" fill="var(--text-muted)" font-size="12">S</text>
+              <text x="20" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">W</text>
+              <g class="needle" id="needle">
+                <polygon points="100,18 108,100 100,112 92,100" fill="var(--primary)"/>
+                <polygon points="100,182 108,100 100,88 92,100" fill="var(--text-muted)"/>
+              </g>
+              <circle cx="100" cy="100" r="6" fill="var(--accent)"/>
+            </svg>
+          </div>
+          <div class="compass-readout"><span id="azReadout">0</span>°</div>
+        </div>
+        <label>Preset Heading</label>
+        <select class="ctl" id="rotPreset" data-act="rotpreset"></select>
+        <div class="slider-row" style="margin-top:10px">
+          <input class="ctl" id="azInput" type="number" min="0" max="360" value="0" />
+          <button class="btn primary ctl sm" data-act="rotset">Go</button>
+          <button class="btn danger ctl sm" data-act="rotstop">Stop</button>
+        </div>
+        <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
+      </div>
+
+      <!-- Slice strip -->
+      <div class="card span-6">
+        <h3>🎚️ Slices</h3>
+        <div class="row" id="sliceRow">
+          <!-- 4 slices A-D rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Palstar Amp -->
+      <div class="card span-6">
+        <h3>🔊 Palstar LA-1K Amp <span class="tag off" id="ampConn" style="margin-left:auto">OFFLINE</span></h3>
+        <div class="row">
+          <div>
+            <div class="kv"><span class="k">Mode</span><span class="v"><span class="tag off" id="ampMode">STANDBY</span></span></div>
+            <div class="kv"><span class="k">Frequency</span><span class="v" id="ampFreq">—</span></div>
+            <div class="kv"><span class="k">Band</span><span class="v" id="ampBand">—</span></div>
+            <div class="kv"><span class="k">Key</span><span class="v" id="ampKey">Unkeyed</span></div>
+          </div>
+          <div>
+            <div class="gauge"><div class="lbl"><span>FWD Power</span><b id="g_ampfwd">0</b></div><div class="track"><div class="fill" id="gf_ampfwd"></div></div></div>
+            <div class="gauge"><div class="lbl"><span>Temperature</span><b id="g_amptemp">0</b></div><div class="track"><div class="fill danger" id="gf_amptemp"></div></div></div>
+          </div>
+        </div>
+        <label>Operate / Standby</label>
+        <div class="btn-group">
+          <button class="ctl" data-act="ampmode" data-mode="standby" id="ampStandbyBtn">Standby</button>
+          <button class="ctl" data-act="ampmode" data-mode="operate" id="ampOperateBtn">Operate</button>
+        </div>
+        <label>Antenna Selection</label>
+        <div class="btn-group" id="ampAntGroup">
+          <button class="ctl" data-act="ampant" data-ant="1">Ant 1</button>
+          <button class="ctl" data-act="ampant" data-ant="2">Ant 2</button>
+          <button class="ctl" data-act="ampant" data-ant="3">Ant 3</button>
+        </div>
+        <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
+      </div>
+
+      <!-- Palstar Tuner -->
+      <div class="card span-6">
+        <h3>📶 Palstar HF-Auto Tuner <span class="tag off" id="tunConn" style="margin-left:auto">OFFLINE</span></h3>
+        <div class="row">
+          <div class="gauge"><div class="lbl"><span>SWR</span><b id="g_tswr">0</b></div><div class="track"><div class="fill accent" id="gf_tswr"></div></div></div>
+          <div class="gauge"><div class="lbl"><span>TX Watts</span><b id="g_tpwr">0</b></div><div class="track"><div class="fill" id="gf_tpwr"></div></div></div>
+          <div class="gauge"><div class="lbl"><span>Peak Power</span><b id="g_tpeak">0</b></div><div class="track"><div class="fill" id="gf_tpeak"></div></div></div>
+        </div>
+        <label>Tuner Mode</label>
+        <div class="btn-group" id="tunModeGroup">
+          <button class="ctl" data-act="tunmode" data-mode="BYPASS">Bypass</button>
+          <button class="ctl" data-act="tunmode" data-mode="AUTO">Auto</button>
+          <button class="ctl" data-act="tunmode" data-mode="MANUAL">Manual</button>
+        </div>
+        <label>Antenna Selection</label>
+        <div class="btn-group" id="tunAntGroup"></div>
+        <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ THEME TAB ============ -->
+  <div class="container tab-pane hidden" id="tab-theme">
+    <div class="grid">
+      <div class="card span-4">
+        <h3>🎨 Saved Themes</h3>
+        <div id="themeList"></div>
+      </div>
+      <div class="card span-8">
+        <h3>Customize Palette</h3>
+        <div class="row">
+          <div style="flex:2">
+            <label>Theme name</label>
+            <input id="themeName" placeholder="My Theme" />
+            <label>Theme id (no spaces)</label>
+            <input id="themeId" placeholder="my-theme" />
+            <div class="swatches" id="colorEditor" style="margin-top:14px"></div>
+            <div class="controls" style="margin-top:16px">
+              <button class="btn primary" id="saveThemeBtn">Save & Apply</button>
+              <button class="btn" id="resetEditorBtn">Reset Editor</button>
+            </div>
+            <div class="ok-msg" id="themeMsg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ USERS TAB (admin) ============ -->
+  <div class="container tab-pane hidden" id="tab-users">
+    <div class="card span-12">
+      <h3>👥 User Management <button class="btn primary sm" id="addUserBtn" style="margin-left:auto">+ Add User</button></h3>
+      <table>
+        <thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="userTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Modals ===== -->
+  <div class="modal-backdrop" id="pwModal">
+    <div class="modal">
+      <h2>Change Password</h2>
+      <label>Current Password</label>
+      <input id="curPw" type="password" />
+      <label>New Password</label>
+      <input id="newPw" type="password" />
+      <label>Confirm New Password</label>
+      <input id="newPw2" type="password" />
+      <div class="error-msg" id="pwErr"></div>
+      <div class="modal-actions">
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn primary" id="pwSave">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="userModal">
+    <div class="modal">
+      <h2 id="userModalTitle">Add User</h2>
+      <label>Username</label>
+      <input id="um_username" />
+      <label>Display Name</label>
+      <input id="um_display" />
+      <label>Role</label>
+      <select id="um_role">
+        <option value="admin">Admin (manage users + full control)</option>
+        <option value="normal" selected>Normal (full control)</option>
+        <option value="viewonly">View-Only (no control)</option>
+      </select>
+      <label id="um_pwlabel">Password</label>
+      <input id="um_password" type="password" />
+      <div class="error-msg" id="um_err"></div>
+      <div class="modal-actions">
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn primary" id="um_save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/theme.js"></script>
+  <script src="/js/users.js"></script>
+</body>
+</html>
