@@ -44,8 +44,9 @@ function start(config) {
     parser.on('data', (line) => {
       const trimmed = line.trim();
       if (trimmed) console.log('[rotator] rx:', JSON.stringify(trimmed));
-      // GS-232A position reply: +0XXX  (az-only) or +0XXX+0YYY (az+el — ignore el)
-      const m = trimmed.match(/\+0(\d{3})/);
+      // ERC-Mini sends GS-232B format: "AZ=071  EL=000"
+      // Fall back to GS-232A format "+0XXX" just in case firmware differs.
+      const m = trimmed.match(/AZ=(\d+)/i) || trimmed.match(/\+0(\d{3})/);
       if (!m) return;
       const az = parseInt(m[1], 10);
       if (isNaN(az)) return;
