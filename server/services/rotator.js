@@ -124,11 +124,11 @@ function jog(dir) {
   // Use M (go-to heading) to drive to the respective limit instead;
   // stopRotator() sends A to halt mid-sweep.
   if (dir === 'cw') {
-    _sendCmd('M360');
-    state.update('rotator', { target: 360, moving: true });
+    _sendCmd('M359');
+    state.update('rotator', { target: 359, moving: true });
   } else if (dir === 'ccw') {
-    _sendCmd('M000');
-    state.update('rotator', { target: 0, moving: true });
+    _sendCmd('M001');
+    state.update('rotator', { target: 1, moving: true });
   }
   jogging = true;
 }
