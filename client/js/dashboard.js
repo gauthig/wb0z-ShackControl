@@ -70,6 +70,18 @@
       tg.appendChild(btn);
     }
 
+    // Amp antennas (with names from config)
+    const ag = document.getElementById('ampAntGroup');
+    ag.innerHTML = '';
+    const ampNames = publicCfg.amp_antennas || {};
+    for (let n = 1; n <= 3; n++) {
+      const btn = document.createElement('button');
+      btn.className = 'ctl';
+      btn.dataset.act = 'ampant'; btn.dataset.ant = n;
+      btn.textContent = ampNames[n] ? `${n}: ${ampNames[n]}` : 'Ant ' + n;
+      ag.appendChild(btn);
+    }
+
     // Slice cards A-D
     const sr = document.getElementById('sliceRow');
     sr.innerHTML = '';

@@ -111,6 +111,11 @@
       "enabled": true,
       "serial_port": "COM7",
       "baud_rate": 9600,
+      "antenna_names": {
+        "1": "Ant 1",
+        "2": "Ant 2",
+        "3": "Ant 3"
+      },
       "data_bits": 8,
       "parity": "none",
       "stop_bits": 1,

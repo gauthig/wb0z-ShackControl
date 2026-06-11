@@ -17,7 +17,10 @@
   const SCHEMA = {
     general: { site_name: 'text', station_callsign: 'text', http_port: 'num', bind_address: 'text', jwt_expiry: 'text' },
     mqtt: { enabled: 'bool', broker: 'text', port: 'num', username: 'text', password: 'text', client_id: 'text', topic_prefix: 'text', publish_interval_sec: 'num' },
-    serial: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
+    serial: {
+      enabled: 'bool', serial_port: 'text', baud_rate: 'num',
+      ant1_name: 'text', ant2_name: 'text', ant3_name: 'text'
+    },
     flexradio: { enabled: 'bool', host_mode: 'text', host: 'text', discovery_port: 'num', tcp_port: 'num' },
     rotator: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
     tuner: {

@@ -44,7 +44,10 @@ function buildSettings(c) {
     serial: {
       enabled: !!ser.enabled,
       serial_port: ser.serial_port,
-      baud_rate: ser.baud_rate
+      baud_rate: ser.baud_rate,
+      ant1_name: (ser.antenna_names && ser.antenna_names['1']) || '',
+      ant2_name: (ser.antenna_names && ser.antenna_names['2']) || '',
+      ant3_name: (ser.antenna_names && ser.antenna_names['3']) || ''
     },
     rotator: {
       enabled: !!rot.enabled,
@@ -161,9 +164,15 @@ function applySettings(c, s) {
     setNum(c.mqtt, 'publish_interval_sec', s.mqtt.publish_interval_sec);
   }
   if (s.serial) {
-    c.serial.palstar_la1k_amp.enabled = !!s.serial.enabled;
-    setIf(c.serial.palstar_la1k_amp, 'serial_port', s.serial.serial_port);
-    setNum(c.serial.palstar_la1k_amp, 'baud_rate', s.serial.baud_rate);
+    const amp = c.serial.palstar_la1k_amp;
+    amp.enabled = !!s.serial.enabled;
+    setIf(amp, 'serial_port', s.serial.serial_port);
+    setNum(amp, 'baud_rate', s.serial.baud_rate);
+    amp.antenna_names = amp.antenna_names || {};
+    for (const n of ['1', '2', '3']) {
+      const name = s.serial[`ant${n}_name`];
+      if (name !== undefined) amp.antenna_names[n] = name;
+    }
   }
   if (s.rotator) {
     c.serial.erc_mini_rotator.enabled = !!s.rotator.enabled;

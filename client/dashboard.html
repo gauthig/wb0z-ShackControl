@@ -45,74 +45,81 @@
         <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>
 
-      <!-- Rotator -->
+      <!-- Slice grid (2x2) -->
       <div class="card span-3">
-        <h3>🧭 Antenna Rotator <span class="tag off" id="rotConn" style="margin-left:auto">OFFLINE</span></h3>
-        <div class="compass-wrap">
-          <div class="compass">
-            <svg viewBox="0 0 200 200">
-              <!-- Compass ring -->
-              <circle cx="100" cy="100" r="92" fill="none" stroke="var(--border)" stroke-width="2"/>
-              <circle cx="100" cy="100" r="78" fill="var(--surface2)" stroke="var(--border)" stroke-width="1"/>
-              <!-- Cardinal labels -->
-              <text x="100" y="24"  text-anchor="middle" fill="var(--text-muted)" font-size="12">N</text>
-              <text x="180" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">E</text>
-              <text x="100" y="188" text-anchor="middle" fill="var(--text-muted)" font-size="12">S</text>
-              <text x="20"  y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">W</text>
-              <!--
-                HexBeam beam pattern — rotated by current azimuth via JS.
-                At 0° the beam points North (up). Geometry at 0°:
-                  Centre tip : (100,  8)   r≈92 along N
-                  Left  edge : ( 35, 35)   r=92 at −45° from N
-                  Right edge : (165, 35)   r=92 at +45° from N
-                  Sector arc : large-arc=0, sweep=1 (clockwise, 90°)
-              -->
-              <g id="needle">
-                <!-- Filled beam sector (translucent) -->
-                <path d="M 100 100 L 35 35 A 92 92 0 0 1 165 35 Z"
-                      fill="var(--primary)" fill-opacity="0.18"/>
-                <!-- Left beam-edge leg (−45°) -->
-                <line x1="100" y1="100" x2="35" y2="35"
-                      stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
-                <!-- Right beam-edge leg (+45°) -->
-                <line x1="100" y1="100" x2="165" y2="35"
-                      stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
-                <!-- Centre beam line (exact heading) — solid, slightly thicker -->
-                <line x1="100" y1="100" x2="100" y2="10"
-                      stroke="var(--primary)" stroke-width="2.5"/>
-                <!-- Arrowhead at beam tip -->
-                <polygon points="100,6 105,18 95,18" fill="var(--primary)"/>
-              </g>
-              <!-- Centre pivot dot -->
-              <circle cx="100" cy="100" r="5" fill="var(--accent)"/>
-            </svg>
-          </div>
-          <div class="compass-readout"><span id="azReadout">0</span>°</div>
+        <h3>🎚️ Slices</h3>
+        <div id="sliceRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <!-- 4 slices A-D rendered by JS -->
         </div>
-        <label>Preset Heading</label>
-        <select class="ctl" id="rotPreset" data-act="rotpreset"></select>
-        <div class="slider-row" style="margin-top:10px">
-          <input class="ctl" id="azInput" type="number" min="0" max="360" value="0" />
-          <button class="btn primary ctl sm" data-act="rotset">Go</button>
-          <button class="btn danger ctl sm" data-act="rotstop">Stop</button>
-        </div>
-        <label style="margin-top:10px">Manual Jog</label>
-        <div class="btn-group">
-          <button class="btn ctl" id="jogCCWBtn" data-jog="ccw"
-                  style="user-select:none;-webkit-user-select:none"
-                  title="Hold to rotate CCW — releases automatically at 0°">◀ CCW</button>
-          <button class="btn ctl" id="jogCWBtn"  data-jog="cw"
-                  style="user-select:none;-webkit-user-select:none"
-                  title="Hold to rotate CW — releases automatically at 360°">CW ▶</button>
-        </div>
-        <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>
 
-      <!-- Slice strip -->
+      <!-- Rotator -->
       <div class="card span-6">
-        <h3>🎚️ Slices</h3>
-        <div class="row" id="sliceRow">
-          <!-- 4 slices A-D rendered by JS -->
+        <h3>🧭 Antenna Rotator <span class="tag off" id="rotConn" style="margin-left:auto">OFFLINE</span></h3>
+        <div class="row">
+          <div class="compass-wrap" style="flex:0 0 auto">
+            <div class="compass lg">
+              <svg viewBox="0 0 200 200">
+                <!-- Compass ring -->
+                <circle cx="100" cy="100" r="92" fill="none" stroke="var(--border)" stroke-width="2"/>
+                <circle cx="100" cy="100" r="78" fill="var(--surface2)" stroke="var(--border)" stroke-width="1"/>
+                <!-- Azimuthal-equidistant world map centered on Apple Valley, CA.
+                     Path data is injected from /js/azmap.js (Natural Earth coastlines). -->
+                <path id="azMap" fill="none" stroke="var(--text-muted)" stroke-opacity="0.5" stroke-width="0.6"/>
+                <!-- Cardinal labels -->
+                <text x="100" y="24"  text-anchor="middle" fill="var(--text-muted)" font-size="12">N</text>
+                <text x="180" y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">E</text>
+                <text x="100" y="188" text-anchor="middle" fill="var(--text-muted)" font-size="12">S</text>
+                <text x="20"  y="105" text-anchor="middle" fill="var(--text-muted)" font-size="12">W</text>
+                <!--
+                  HexBeam beam pattern — rotated by current azimuth via JS.
+                  At 0° the beam points North (up). Geometry at 0°:
+                    Centre tip : (100,  8)   r≈92 along N
+                    Left  edge : ( 35, 35)   r=92 at −45° from N
+                    Right edge : (165, 35)   r=92 at +45° from N
+                    Sector arc : large-arc=0, sweep=1 (clockwise, 90°)
+                -->
+                <g id="needle">
+                  <!-- Filled beam sector (translucent) -->
+                  <path d="M 100 100 L 35 35 A 92 92 0 0 1 165 35 Z"
+                        fill="var(--primary)" fill-opacity="0.18"/>
+                  <!-- Left beam-edge leg (−45°) -->
+                  <line x1="100" y1="100" x2="35" y2="35"
+                        stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
+                  <!-- Right beam-edge leg (+45°) -->
+                  <line x1="100" y1="100" x2="165" y2="35"
+                        stroke="var(--primary)" stroke-width="1.5" stroke-opacity="0.7"/>
+                  <!-- Centre beam line (exact heading) — solid, slightly thicker -->
+                  <line x1="100" y1="100" x2="100" y2="10"
+                        stroke="var(--primary)" stroke-width="2.5"/>
+                  <!-- Arrowhead at beam tip -->
+                  <polygon points="100,6 105,18 95,18" fill="var(--primary)"/>
+                </g>
+                <!-- Centre pivot dot = QTH (Apple Valley, CA) -->
+                <circle cx="100" cy="100" r="4" fill="var(--accent)"/>
+              </svg>
+            </div>
+            <div class="compass-readout"><span id="azReadout">0</span>°</div>
+          </div>
+          <div>
+            <label>Preset Heading</label>
+            <select class="ctl" id="rotPreset" data-act="rotpreset"></select>
+            <div class="slider-row" style="margin-top:10px">
+              <input class="ctl" id="azInput" type="number" min="0" max="360" value="0" />
+              <button class="btn primary ctl sm" data-act="rotset">Go</button>
+              <button class="btn danger ctl sm" data-act="rotstop">Stop</button>
+            </div>
+            <label style="margin-top:10px">Manual Jog</label>
+            <div class="btn-group">
+              <button class="btn ctl" id="jogCCWBtn" data-jog="ccw"
+                      style="user-select:none;-webkit-user-select:none"
+                      title="Hold to rotate CCW — releases automatically at 0°">◀ CCW</button>
+              <button class="btn ctl" id="jogCWBtn"  data-jog="cw"
+                      style="user-select:none;-webkit-user-select:none"
+                      title="Hold to rotate CW — releases automatically at 360°">CW ▶</button>
+            </div>
+            <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
+          </div>
         </div>
       </div>
 
@@ -131,16 +138,18 @@
             <div class="gauge"><div class="lbl"><span>Temperature</span><b id="g_amptemp">0</b></div><div class="track"><div class="fill danger" id="gf_amptemp"></div></div></div>
           </div>
         </div>
-        <label>Operate / Standby</label>
-        <div class="btn-group">
-          <button class="ctl" data-act="ampmode" data-mode="standby" id="ampStandbyBtn">Standby</button>
-          <button class="ctl" data-act="ampmode" data-mode="operate" id="ampOperateBtn">Operate</button>
-        </div>
-        <label>Antenna Selection</label>
-        <div class="btn-group" id="ampAntGroup">
-          <button class="ctl" data-act="ampant" data-ant="1">Ant 1</button>
-          <button class="ctl" data-act="ampant" data-ant="2">Ant 2</button>
-          <button class="ctl" data-act="ampant" data-ant="3">Ant 3</button>
+        <div class="row">
+          <div>
+            <label>Operate / Standby</label>
+            <div class="btn-group">
+              <button class="ctl" data-act="ampmode" data-mode="standby" id="ampStandbyBtn">Standby</button>
+              <button class="ctl" data-act="ampmode" data-mode="operate" id="ampOperateBtn">Operate</button>
+            </div>
+          </div>
+          <div>
+            <label>Antenna Selection</label>
+            <div class="btn-group" id="ampAntGroup"></div>
+          </div>
         </div>
         <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>
@@ -161,13 +170,19 @@
             <div class="gauge"><div class="lbl"><span>Peak Power</span><b id="g_tpeak">0</b></div><div class="track"><div class="fill" id="gf_tpeak"></div></div></div>
           </div>
         </div>
-        <label>Tuner Mode <span style="font-weight:normal;opacity:.6">(Manual is front-panel only)</span></label>
-        <div class="btn-group" id="tunModeGroup">
-          <button class="ctl" data-act="tunmode" data-mode="BYPASS">Bypass</button>
-          <button class="ctl" data-act="tunmode" data-mode="AUTO">Auto</button>
+        <div class="row">
+          <div>
+            <label>Tuner Mode <span style="font-weight:normal;opacity:.6">(Manual is front-panel only)</span></label>
+            <div class="btn-group" id="tunModeGroup">
+              <button class="ctl" data-act="tunmode" data-mode="BYPASS">Bypass</button>
+              <button class="ctl" data-act="tunmode" data-mode="AUTO">Auto</button>
+            </div>
+          </div>
+          <div>
+            <label>Antenna Selection</label>
+            <div class="btn-group" id="tunAntGroup"></div>
+          </div>
         </div>
-        <label>Antenna Selection</label>
-        <div class="btn-group" id="tunAntGroup"></div>
         <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>
 
@@ -254,6 +269,7 @@
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/azmap.js"></script>
   <script src="/js/dashboard.js"></script>
   <script src="/js/theme.js"></script>
   <script src="/js/users.js"></script>

@@ -112,6 +112,11 @@
       "enabled": true,
       "serial_port": "COM7",
       "baud_rate": 9600,
+      "antenna_names": {
+        "1": "HexBeam",
+        "2": "EFHW",
+        "3": "ZeroFive"
+      },
       "data_bits": 8,
       "parity": "none",
       "stop_bits": 1,
