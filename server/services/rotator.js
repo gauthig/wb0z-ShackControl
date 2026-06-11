@@ -4,12 +4,12 @@
  * Replaces the PST Rotator UDP bridge. Speaks Yaesu GS-232A directly on the
  * COM port that the ERC-Mini listens on (default COM5, 9600 8N1).
  *
- * Protocol summary:
- *   C2\r\n        → +0XXX\r\n   query current azimuth (3-digit zero-padded)
- *   Maaa\r\n      → (silent)    go to azimuth aaa — controller picks shortest path
- *   R\r\n         → (silent)    rotate CW continuously
- *   L\r\n         → (silent)    rotate CCW continuously
- *   A\r\n         → (silent)    stop all movement
+ * Protocol summary (all commands terminated with CR only, no LF):
+ *   C2\r   → AZ=aaa  EL=eee\r\n   query azimuth+elevation (GS-232B mode)
+ *   Maaa\r → \r                    go to azimuth aaa
+ *   R\r    → \r                    rotate CW continuously
+ *   L\r    → \r                    rotate CCW continuously
+ *   A\r    → \r                    stop all movement
  */
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
@@ -96,7 +96,8 @@ function stop() {
 // ---------------------------------------------------------------------------
 function _sendCmd(cmd) {
   if (!port || !port.isOpen) return;
-  port.write(cmd + '\r\n', (err) => {
+  // ERC-Mini protocol uses CR only as terminator (no LF).
+  port.write(cmd + '\r', (err) => {
     if (err) console.warn('[rotator] write error:', err.message);
   });
 }
@@ -123,15 +124,15 @@ function setAzimuth(degrees) {
 function jog(dir) {
   if (dir !== jogDir) {
     // New direction or first call — pause C2 polling so it doesn't interfere,
-    // then send the M command exactly once.
+    // then send R (CW) or L (CCW) for continuous rotation.
     jogDir = dir;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (dir === 'cw') {
-      _sendCmd('M359');
-      state.update('rotator', { target: 359, moving: true });
+      _sendCmd('R');
+      state.update('rotator', { moving: true });
     } else if (dir === 'ccw') {
-      _sendCmd('M001');
-      state.update('rotator', { target: 1, moving: true });
+      _sendCmd('L');
+      state.update('rotator', { moving: true });
     }
   }
   // Every heartbeat call resets the 2-s safety watchdog.
