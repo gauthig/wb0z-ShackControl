@@ -14,10 +14,11 @@
  *     [4]  capacitance step
  *     [5]  antenna port packed in bits 2-3 of the low nibble (1..3)
  *     [6]  inductance step
- *     [7]  power high byte (unconfirmed — observed 0 below 256 W)
+ *     [7]  unknown — NOT power-high: reads ~0x13 at 5 W on this firmware
  *     [8]  power low byte (watts)
- *     [9]  VSWR high byte (value / 100)
- *     [10] VSWR low byte
+ *     [9]  bits 4-7 are status flags on this firmware (0xC0 seen during TX);
+ *          bits 0-3 may extend VSWR above 2.55
+ *     [10] VSWR low byte (value / 100)
  *     [11] checksum — two's complement of the sum of bytes 0..10
  *
  *   Command frame — 4 bytes: 0x7A, mnemonic, value, checksum (same formula):
@@ -42,6 +43,8 @@ let lastData = 0;
 let rxBuf = Buffer.alloc(0);
 let peakPower = 0;
 let peakTime = 0;
+let lastFrameHex = '';
+let lastFrameLog = 0;
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -126,9 +129,20 @@ function onData(chunk) {
 function parseStatusFrame(f) {
   lastData = Date.now();
 
+  // With debug_frames enabled in config, log raw frames (throttled, only when
+  // the content changes) so unknown byte fields can be mapped from get_logs.
+  if (cfg.debug_frames) {
+    const hex = f.toString('hex');
+    if (hex !== lastFrameHex && Date.now() - lastFrameLog > 1000) {
+      console.log('[tuner] frame:', hex.replace(/../g, '$& ').trim());
+      lastFrameHex = hex;
+      lastFrameLog = Date.now();
+    }
+  }
+
   const freqKHz = (f[2] << 8) | f[3];
-  const power = (f[7] << 8) | f[8];
-  const swr = ((f[9] << 8) | f[10]) / 100;
+  const power = f[8];
+  const swr = (((f[9] & 0x0f) << 8) | f[10]) / 100;
   const antenna = (f[5] & 0x0f) >> 2;
 
   // Peak-hold the power reading so short SSB/CW peaks stay visible.

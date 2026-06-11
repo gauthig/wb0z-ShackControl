@@ -148,6 +148,7 @@
       "parity": "none",
       "stop_bits": 2,
       "watchdog_timeout_sec": 10,
+      "debug_frames": true,
       "antenna_rules": {
         "1": {
           "name": "HexBeam",
