@@ -20,6 +20,7 @@ let cfg = null;
 let pollTimer = null;
 let jogWatchdog = null;
 let jogging = false;
+let jogDir = null; // track active direction so heartbeats don't resend M
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -120,25 +121,33 @@ function setAzimuth(degrees) {
  * sending heartbeats (e.g. browser closes) the rotator auto-stops.
  */
 function jog(dir) {
-  // ERC-Mini does not support R/L continuous-rotation commands.
-  // Use M (go-to heading) to drive to the respective limit instead;
-  // stopRotator() sends A to halt mid-sweep.
-  if (dir === 'cw') {
-    _sendCmd('M359');
-    state.update('rotator', { target: 359, moving: true });
-  } else if (dir === 'ccw') {
-    _sendCmd('M001');
-    state.update('rotator', { target: 1, moving: true });
+  if (dir !== jogDir) {
+    // New direction or first call — pause C2 polling so it doesn't interfere,
+    // then send the M command exactly once.
+    jogDir = dir;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (dir === 'cw') {
+      _sendCmd('M359');
+      state.update('rotator', { target: 359, moving: true });
+    } else if (dir === 'ccw') {
+      _sendCmd('M001');
+      state.update('rotator', { target: 1, moving: true });
+    }
   }
+  // Every heartbeat call resets the 2-s safety watchdog.
   jogging = true;
+  _resetWatchdog();
 }
 
 /** Stop all rotation immediately. */
 function stopRotator() {
   jogging = false;
+  jogDir = null;
   _clearWatchdog();
   _sendCmd('A');
   state.update('rotator', { moving: false, target: null });
+  // Resume position polling now that jog is done.
+  if (!pollTimer) _startPoll();
 }
 
 // ---------------------------------------------------------------------------
