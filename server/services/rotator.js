@@ -123,10 +123,8 @@ function setAzimuth(degrees) {
  */
 function jog(dir) {
   if (dir !== jogDir) {
-    // New direction or first call — pause C2 polling so it doesn't interfere,
-    // then send R (CW) or L (CCW) for continuous rotation.
+    // New direction or first call — send R (CW) or L (CCW) for continuous rotation.
     jogDir = dir;
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (dir === 'cw') {
       _sendCmd('R');
       state.update('rotator', { moving: true });
