@@ -120,16 +120,17 @@ function setAzimuth(degrees) {
  * sending heartbeats (e.g. browser closes) the rotator auto-stops.
  */
 function jog(dir) {
+  // ERC-Mini does not support R/L continuous-rotation commands.
+  // Use M (go-to heading) to drive to the respective limit instead;
+  // stopRotator() sends A to halt mid-sweep.
   if (dir === 'cw') {
-    _sendCmd('R');
+    _sendCmd('M360');
+    state.update('rotator', { target: 360, moving: true });
   } else if (dir === 'ccw') {
-    _sendCmd('L');
+    _sendCmd('M000');
+    state.update('rotator', { target: 0, moving: true });
   }
   jogging = true;
-  state.update('rotator', { moving: true });
-  _resetWatchdog();
-  // Boundary enforcement is handled in the data handler once azimuth is
-  // actually being read back from the ERC-Mini.
 }
 
 /** Stop all rotation immediately. */
