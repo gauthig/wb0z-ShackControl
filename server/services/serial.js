@@ -69,13 +69,12 @@ function open() {
     });
 
     port.on('data', (data) => {
-      const chunk = data.toString('utf8');
-      buffer += chunk;
-      if (cfg.debug_raw) console.log('[serial] rx raw:', JSON.stringify(chunk));
-      // The amp's RS232 port is Kenwood-CAT-style: responses are terminated
-      // with ';' (not newline). Accept ';', CR or LF as end-of-response.
+      buffer += data.toString('utf8');
+      // The amp streams a status record terminated by CR (\r). Fields WITHIN
+      // the record are themselves ';'-delimited, so CR/LF is the only record
+      // terminator — never split on ';'.
       let m;
-      while ((m = buffer.match(/[;\r\n]/))) {
+      while ((m = buffer.match(/[\r\n]/))) {
         const line = buffer.slice(0, m.index).trim();
         buffer = buffer.slice(m.index + 1);
         if (line) parseResponse(line);
@@ -122,28 +121,49 @@ function bandFromMHz(mhz) {
   return hit ? hit[2] : '';
 }
 
-/** Parse the CSV status line from the amp. */
+/**
+ * Parse the amp's status record. Fields are ';'-delimited (firmware 1.09E):
+ *   0  AD14294   "AD" + frequency in kHz   -> 14.294 MHz
+ *   1  2         mode echo (1=operate 2=standby)
+ *   2  000       forward power (watts)
+ *   3  11        (TBD)
+ *   4  1         (TBD)
+ *   5  4         (TBD)
+ *   6  50        (TBD)
+ *   7  001       (TBD)
+ *   8  025       temperature (°C)  [best guess — verifying]
+ *   9  1023      (TBD — likely a 10-bit ADC reading)
+ *   10 0         key status (0=Unkeyed ...)  [best guess — verifying]
+ *   11 1         (TBD)
+ *   12 1         antenna (1..3)  [best guess — verifying]
+ *   13 |/-\      activity spinner (ignored)
+ *   14 1.09E     firmware version
+ */
 function parseResponse(line) {
-  const f = line.split(',');
-  if (cfg.debug_raw) console.log(`[serial] rx line (${f.length} fields):`, JSON.stringify(line));
-  if (f.length < 12) return;
+  const f = line.split(';').map((s) => s.trim());
+  if (cfg.debug_raw) {
+    console.log(`[serial] rx record (${f.length} fields):`, JSON.stringify(f));
+  }
+  if (f.length < 13) return;
   const proto = cfg.protocol;
-  const keyCode = f[4];
-  const modeOperate = state.get().amp.mode === 'operate';
-  const freqMHz = parseInt(f[1], 10) / 1000 || 0;
-  const tempC = parseInt(f[10], 10) || 0;
-  state.update('amp', {
+
+  const freqMHz = (parseInt(String(f[0]).replace(/\D/g, ''), 10) || 0) / 1000;
+  const fwd = parseInt(f[2], 10) || 0;
+  const tempC = parseInt(f[8], 10) || 0;
+  const keyCode = f[10];
+  const ant = parseInt(f[12], 10);
+
+  const patch = {
     frequency: freqMHz,
-    fwdPower: (parseInt(f[2], 10) || 0) * (modeOperate ? 10 : 1),
-    // Derive the band from frequency (per-band labels) rather than the amp's
-    // band code, which only identifies the shared LPF filter bank.
-    band: bandFromMHz(freqMHz) || proto.band_codes[f[3]] || '',
-    keyStatus: proto.key_status_codes[keyCode] || 'Unkeyed',
-    // The amp reports °C; the dashboard shows °F. Set temperature_in: "F"
-    // in config if a firmware turns out to report Fahrenheit already.
+    // Derive band from frequency for per-band labels.
+    band: bandFromMHz(freqMHz),
+    fwdPower: fwd,
+    // Amp reports °C; dashboard shows °F. Set temperature_in:"F" to skip.
     temperature: cfg.temperature_in === 'F' ? tempC : Math.round(tempC * 9 / 5 + 32),
-    antenna: parseInt(f[11], 10) || 1
-  });
+    keyStatus: proto.key_status_codes[keyCode] || 'Unkeyed'
+  };
+  if (ant >= 1 && ant <= 3) patch.antenna = ant;
+  state.update('amp', patch);
 }
 
 function write(command) {
