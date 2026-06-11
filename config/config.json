@@ -117,6 +117,7 @@
         "2": "EFHW",
         "3": "ZeroFive"
       },
+      "debug_raw": true,
       "data_bits": 8,
       "parity": "none",
       "stop_bits": 1,

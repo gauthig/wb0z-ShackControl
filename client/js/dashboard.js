@@ -178,11 +178,11 @@
     const ampMode = document.getElementById('ampMode');
     ampMode.className = 'tag ' + (a.mode === 'operate' ? 'on' : 'off');
     ampMode.textContent = (a.mode || 'standby').toUpperCase();
-    setText('ampFreq', a.frequency ? a.frequency.toFixed(3) + ' MHz' : '—');
+    setText('ampFreq', fmtFreq(a.frequency));
     setText('ampBand', a.band || '—');
     setText('ampKey', a.keyStatus || 'Unkeyed');
     setGauge('gf_ampfwd', 'g_ampfwd', a.fwdPower, 1500);
-    setGauge('gf_amptemp', 'g_amptemp', a.temperature, 100);
+    setGauge('gf_amptemp', 'g_amptemp', a.temperature, 250); // °F
     highlight('ampAntGroup', 'ant', a.antenna);
     document.getElementById('ampOperateBtn').classList.toggle('active', a.mode === 'operate');
     document.getElementById('ampStandbyBtn').classList.toggle('active', a.mode !== 'operate');

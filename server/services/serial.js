@@ -69,12 +69,21 @@ function open() {
     });
 
     port.on('data', (data) => {
-      buffer += data.toString('utf8');
-      let idx;
-      while ((idx = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, idx).trim();
-        buffer = buffer.slice(idx + 1);
+      const chunk = data.toString('utf8');
+      buffer += chunk;
+      if (cfg.debug_raw) console.log('[serial] rx raw:', JSON.stringify(chunk));
+      // The amp's RS232 port is Kenwood-CAT-style: responses are terminated
+      // with ';' (not newline). Accept ';', CR or LF as end-of-response.
+      let m;
+      while ((m = buffer.match(/[;\r\n]/))) {
+        const line = buffer.slice(0, m.index).trim();
+        buffer = buffer.slice(m.index + 1);
         if (line) parseResponse(line);
+      }
+      // Runaway guard if no terminator ever arrives.
+      if (buffer.length > 500) {
+        console.warn('[serial] rx buffer overflow without terminator, clearing:', JSON.stringify(buffer.slice(0, 120)));
+        buffer = '';
       }
     });
 
@@ -100,20 +109,39 @@ function startPolling() {
   pollTimer = setInterval(() => write(cfg.protocol.poll_command), interval);
 }
 
+/** Ham band name from a frequency in MHz (covers band edges generously). */
+function bandFromMHz(mhz) {
+  if (!mhz) return '';
+  const bands = [
+    [1.7, 2.1, '160M'], [3.4, 4.1, '80M'], [5.2, 5.5, '60M'],
+    [6.9, 7.4, '40M'], [10.0, 10.2, '30M'], [13.9, 14.4, '20M'],
+    [18.0, 18.2, '17M'], [20.9, 21.5, '15M'], [24.8, 25.0, '12M'],
+    [27.9, 29.8, '10M'], [49.9, 54.1, '6M']
+  ];
+  const hit = bands.find(([lo, hi]) => mhz >= lo && mhz <= hi);
+  return hit ? hit[2] : '';
+}
+
 /** Parse the CSV status line from the amp. */
 function parseResponse(line) {
   const f = line.split(',');
+  if (cfg.debug_raw) console.log(`[serial] rx line (${f.length} fields):`, JSON.stringify(line));
   if (f.length < 12) return;
   const proto = cfg.protocol;
-  const bandCode = f[3];
   const keyCode = f[4];
   const modeOperate = state.get().amp.mode === 'operate';
+  const freqMHz = parseInt(f[1], 10) / 1000 || 0;
+  const tempC = parseInt(f[10], 10) || 0;
   state.update('amp', {
-    frequency: parseInt(f[1], 10) / 1000 || 0,
+    frequency: freqMHz,
     fwdPower: (parseInt(f[2], 10) || 0) * (modeOperate ? 10 : 1),
-    band: proto.band_codes[bandCode] || '',
+    // Derive the band from frequency (per-band labels) rather than the amp's
+    // band code, which only identifies the shared LPF filter bank.
+    band: bandFromMHz(freqMHz) || proto.band_codes[f[3]] || '',
     keyStatus: proto.key_status_codes[keyCode] || 'Unkeyed',
-    temperature: parseInt(f[10], 10) || 0,
+    // The amp reports °C; the dashboard shows °F. Set temperature_in: "F"
+    // in config if a firmware turns out to report Fahrenheit already.
+    temperature: cfg.temperature_in === 'F' ? tempC : Math.round(tempC * 9 / 5 + 32),
     antenna: parseInt(f[11], 10) || 1
   });
 }
