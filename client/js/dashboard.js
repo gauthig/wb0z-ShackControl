@@ -257,7 +257,10 @@
       } else if (act === 'ampant') {
         await API.post('/api/devices/amp/antenna', { antenna: Number(el.dataset.ant) });
       } else if (act === 'rotset') {
-        await API.post('/api/devices/rotator/azimuth', { degrees: Number(document.getElementById('azInput').value) });
+        const raw = Number(document.getElementById('azInput').value);
+        const clamped = Math.max(0, Math.min(360, Math.round(raw)));
+        document.getElementById('azInput').value = clamped;
+        await API.post('/api/devices/rotator/azimuth', { degrees: clamped });
       } else if (act === 'rotstop') {
         await API.post('/api/devices/rotator/stop', {});
       } else if (act === 'tunmode') {
@@ -277,10 +280,9 @@
   });
 
   /* ---------- Rotator jog buttons (hold-to-move) ----------
-   * While the button is held the client sends a heartbeat every 800 ms.
-   * The server's 2-second watchdog auto-stops the rotator if the client
-   * disappears (browser close, network drop, etc.).
-   * Works with mouse and touch via Pointer Events.
+   * While held, sends a heartbeat every 800 ms so the server-side 2-second
+   * watchdog keeps the rotator moving. Releasing (or leaving the button)
+   * sends an explicit stop command.
    */
   (function () {
     let _jogTimer = null;
@@ -289,9 +291,7 @@
     function startJog(dir) {
       if (!canControl || _activeDir === dir) return;
       _activeDir = dir;
-      function beat() {
-        API.post('/api/devices/rotator/jog', { dir }).catch(() => {});
-      }
+      const beat = () => API.post('/api/devices/rotator/jog', { dir }).catch(() => {});
       beat();
       _jogTimer = setInterval(beat, 800);
     }
@@ -308,14 +308,13 @@
       const btn = document.getElementById(id);
       if (!btn) return;
       const dir = btn.dataset.jog;
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        btn.setPointerCapture(e.pointerId);
-        startJog(dir);
-      });
-      btn.addEventListener('pointerup', stopJog);
-      btn.addEventListener('pointercancel', stopJog);
-      btn.addEventListener('pointerleave', stopJog);
+
+      btn.addEventListener('mousedown',   (e) => { e.preventDefault(); startJog(dir); });
+      btn.addEventListener('touchstart',  (e) => { e.preventDefault(); startJog(dir); }, { passive: false });
+      btn.addEventListener('mouseup',     stopJog);
+      btn.addEventListener('mouseleave',  stopJog);
+      btn.addEventListener('touchend',    stopJog);
+      btn.addEventListener('touchcancel', stopJog);
     });
   })();
 

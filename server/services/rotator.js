@@ -38,11 +38,14 @@ function start(config) {
       autoOpen: false
     });
 
-    const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+    // GS-232A terminates lines with CR only (\r), not CRLF.
+    const parser = port.pipe(new ReadlineParser({ delimiter: '\r' }));
 
     parser.on('data', (line) => {
+      const trimmed = line.trim();
+      if (trimmed) console.log('[rotator] rx:', JSON.stringify(trimmed));
       // GS-232A position reply: +0XXX  (az-only) or +0XXX+0YYY (az+el — ignore el)
-      const m = line.trim().match(/\+0(\d{3})/);
+      const m = trimmed.match(/\+0(\d{3})/);
       if (!m) return;
       const az = parseInt(m[1], 10);
       if (isNaN(az)) return;
@@ -116,17 +119,16 @@ function setAzimuth(degrees) {
  * sending heartbeats (e.g. browser closes) the rotator auto-stops.
  */
 function jog(dir) {
-  const cur = (state.get().rotator || {}).azimuth || 0;
   if (dir === 'cw') {
-    if (cur >= 360) return;
     _sendCmd('R');
   } else if (dir === 'ccw') {
-    if (cur <= 0) return;
     _sendCmd('L');
   }
   jogging = true;
   state.update('rotator', { moving: true });
   _resetWatchdog();
+  // Boundary enforcement is handled in the data handler once azimuth is
+  // actually being read back from the ERC-Mini.
 }
 
 /** Stop all rotation immediately. */
