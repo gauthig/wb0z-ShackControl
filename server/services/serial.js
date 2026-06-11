@@ -151,8 +151,12 @@ function parseResponse(line) {
   const fwd = parseInt(f[2], 10) || 0;
   const tempC = parseInt(f[8], 10) || 0;
   const keyCode = f[10];
-  const ant = parseInt(f[12], 10);
 
+  // NOTE: antenna is NOT taken from the status record. Field 12 stays "1"
+  // regardless of the amp's actual antenna, so reading it here would stomp the
+  // user's selection back to 1 on every poll. The selected antenna is tracked
+  // optimistically in selectAntenna() instead. (If a future capture reveals the
+  // real antenna field, reflect it here.)
   const patch = {
     frequency: freqMHz,
     // Derive band from frequency for per-band labels.
@@ -162,7 +166,6 @@ function parseResponse(line) {
     temperature: cfg.temperature_in === 'F' ? tempC : Math.round(tempC * 9 / 5 + 32),
     keyStatus: proto.key_status_codes[keyCode] || 'Unkeyed'
   };
-  if (ant >= 1 && ant <= 3) patch.antenna = ant;
   state.update('amp', patch);
 }
 
