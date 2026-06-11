@@ -116,6 +116,8 @@
         "2": "Ant 2",
         "3": "Ant 3"
       },
+      "debug_raw": false,
+      "send_frequency": false,
       "data_bits": 8,
       "parity": "none",
       "stop_bits": 1,
@@ -127,7 +129,7 @@
         "operate_command": "AM1;\r\n",
         "standby_command": "AM2;\r\n",
         "antenna_select_command": "AA{n};\r\n",
-        "frequency_command": "IF{freq_padded_8};\r\n",
+        "frequency_command": "FA{freq_hz_11};\r\n",
         "band_codes": {
           "0": "",
           "1": "160m",
