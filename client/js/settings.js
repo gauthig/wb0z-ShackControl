@@ -20,7 +20,12 @@
     serial: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
     flexradio: { enabled: 'bool', host_mode: 'text', host: 'text', discovery_port: 'num', tcp_port: 'num' },
     rotator: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
-    tuner: { enabled: 'bool', serial_port: 'text', baud_rate: 'num' },
+    tuner: {
+      enabled: 'bool', serial_port: 'text', baud_rate: 'num',
+      ant1_name: 'text', ant1_mode: 'text',
+      ant2_name: 'text', ant2_mode: 'text',
+      ant3_name: 'text', ant3_mode: 'text'
+    },
     home_assistant: { enabled: 'bool', base_url: 'text', token: 'text', topic_prefix: 'text', power_supply_id: 'text', amplifier_id: 'text', radio_relay_id: 'text', desk_light_1_id: 'text', desk_light_2_id: 'text' }
   };
 

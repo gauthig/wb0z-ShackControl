@@ -132,7 +132,9 @@ command for it.
 | `serial_port` | Windows COM port the tuner is on (e.g. `COM4`). |
 | `baud_rate`, `data_bits`, `parity`, `stop_bits` | Serial line settings — the HF-Auto requires **4800/8/N/2**. |
 | `watchdog_timeout_sec` | If no status frame within this time, the tuner is marked offline. |
-| `antenna_rules` | Friendly name per antenna and the tuner mode automatically forced when it is selected (resonant → bypass, non-resonant → auto). |
+| `debug_frames` | Log raw status frames (hex) for protocol debugging. |
+| `send_frequency` | Send the FlexRadio active-slice frequency to the tuner so it can recall stored C/L before TX (default true). |
+| `antenna_rules` | Friendly name per antenna and the tuner mode automatically applied when it is selected (resonant → bypass, non-resonant → auto). Editable in the Settings screen; the dashboard mode buttons can still override it. |
 
 ---
 

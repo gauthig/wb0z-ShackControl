@@ -29,6 +29,7 @@
 const dgram = require('dgram');
 const net = require('net');
 const state = require('./state');
+const tuner = require('./tuner');
 
 let cfg = null;
 let discoverySock = null;
@@ -203,6 +204,13 @@ function handleLine(line) {
       if (props.active !== undefined) patch.active = parseInt(props.active, 10);
       state.update('flexradio', { slices: { [key]: patch } });
       if (props.active === '1') state.update('flexradio', { activeSlice: key });
+      // Track the active slice on the HF-Auto tuner so it can recall stored
+      // C/L for the new frequency before we ever transmit there.
+      const fr = state.get().flexradio;
+      if (key === fr.activeSlice) {
+        const freq = patch.freq !== undefined ? patch.freq : (fr.slices[key] && fr.slices[key].freq);
+        if (freq) tuner.notifyFrequencyMHz(freq);
+      }
     }
     return;
   }

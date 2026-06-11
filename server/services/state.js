@@ -71,7 +71,8 @@ const state = {
     inductance: 0,
     swr: 0,
     power: 0,
-    peakPower: 0
+    peakPower: 0,
+    powerRangeLimit: 1000
   },
   mqtt: { connected: false },
   home_assistant: {

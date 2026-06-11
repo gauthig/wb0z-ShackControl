@@ -63,7 +63,10 @@
       btn.className = 'ctl';
       btn.dataset.act = 'tunant'; btn.dataset.ant = n;
       const nm = rules[n] && rules[n].name ? rules[n].name : 'Ant ' + n;
-      btn.textContent = `${n}: ${nm}`;
+      const fm = rules[n] && rules[n].force_mode ? rules[n].force_mode : '';
+      const fmLabel = fm ? ` · ${fm.charAt(0).toUpperCase()}${fm.slice(1).toLowerCase()}` : '';
+      btn.textContent = `${n}: ${nm}${fmLabel}`;
+      btn.title = fm ? `Selecting this antenna defaults the tuner to ${fm.toUpperCase()} (you can override with the mode buttons)` : '';
       tg.appendChild(btn);
     }
 
@@ -181,11 +184,14 @@
       tunMode.textContent = t.mode || '—';
     }
     setText('tunFreq', t.frequency ? Number(t.frequency).toFixed(3) + ' MHz' : '—');
-    setText('tunCap', t.capacitance ?? '—');
-    setText('tunInd', t.inductance ?? '—');
+    // C/L are out of the signal path in bypass — show N/A instead of values.
+    const inBypass = t.mode === 'BYPASS';
+    setText('tunCap', inBypass ? 'N/A' : (t.capacitance ?? '—'));
+    setText('tunInd', inBypass ? 'N/A' : (t.inductance ?? '—'));
+    const tunMax = t.powerRangeLimit || 1000;
     setGauge('gf_tswr', 'g_tswr', t.swr, 10, 1);
-    setGauge('gf_tpwr', 'g_tpwr', t.power, 1500);
-    setGauge('gf_tpeak', 'g_tpeak', t.peakPower, 1500);
+    setGauge('gf_tpwr', 'g_tpwr', t.power, tunMax);
+    setGauge('gf_tpeak', 'g_tpeak', t.peakPower, tunMax);
     highlight('tunModeGroup', 'mode', t.mode, true);
     highlight('tunAntGroup', 'ant', t.antenna);
   }

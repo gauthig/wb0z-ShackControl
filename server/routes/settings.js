@@ -19,6 +19,7 @@ function buildSettings(c) {
   const ser = (c.serial && c.serial.palstar_la1k_amp) || {};
   const rot = (c.serial && c.serial.erc_mini_rotator) || {};
   const tun = (c.serial && c.serial.palstar_hf_auto_tuner) || {};
+  const tunAnt = (n, key) => (tun.antenna_rules && tun.antenna_rules[n] && tun.antenna_rules[n][key]) || '';
   const ha = c.home_assistant || {};
   const ent = ha.entities || {};
 
@@ -53,7 +54,10 @@ function buildSettings(c) {
     tuner: {
       enabled: !!tun.enabled,
       serial_port: tun.serial_port || 'COM4',
-      baud_rate: tun.baud_rate || 4800
+      baud_rate: tun.baud_rate || 4800,
+      ant1_name: tunAnt('1', 'name'), ant1_mode: tunAnt('1', 'force_mode'),
+      ant2_name: tunAnt('2', 'name'), ant2_mode: tunAnt('2', 'force_mode'),
+      ant3_name: tunAnt('3', 'name'), ant3_mode: tunAnt('3', 'force_mode')
     },
     flexradio: {
       enabled: !!(c.flexradio && c.flexradio.enabled),
@@ -167,9 +171,18 @@ function applySettings(c, s) {
     setNum(c.serial.erc_mini_rotator, 'baud_rate', s.rotator.baud_rate);
   }
   if (s.tuner) {
-    c.serial.palstar_hf_auto_tuner.enabled = !!s.tuner.enabled;
-    setIf(c.serial.palstar_hf_auto_tuner, 'serial_port', s.tuner.serial_port);
-    setNum(c.serial.palstar_hf_auto_tuner, 'baud_rate', s.tuner.baud_rate);
+    const tun = c.serial.palstar_hf_auto_tuner;
+    tun.enabled = !!s.tuner.enabled;
+    setIf(tun, 'serial_port', s.tuner.serial_port);
+    setNum(tun, 'baud_rate', s.tuner.baud_rate);
+    tun.antenna_rules = tun.antenna_rules || {};
+    for (const n of ['1', '2', '3']) {
+      tun.antenna_rules[n] = tun.antenna_rules[n] || {};
+      const name = s.tuner[`ant${n}_name`];
+      const mode = s.tuner[`ant${n}_mode`];
+      if (name !== undefined && name !== '') tun.antenna_rules[n].name = name;
+      if (mode === 'auto' || mode === 'bypass') tun.antenna_rules[n].force_mode = mode;
+    }
   }
   if (s.flexradio) {
     c.flexradio.enabled = !!s.flexradio.enabled;

@@ -4,28 +4,39 @@
  * Replaces the HF-AUTO Controller UDP bridge. Speaks the tuner's native
  * binary protocol directly on the COM port (default COM4, 4800 baud 8N2).
  *
- * Protocol (reverse-engineered; see github.com/hexnoctal/hf-auto-tuner):
+ * Protocol decoded from the HF-AUTO Controller app (MW0LGE) decoder IL,
+ * cross-checked with github.com/hexnoctal/hf-auto-tuner:
  *
  *   Status frame — streamed continuously by the tuner, 12 bytes:
  *     [0]  0x77 frame header
- *     [1]  mode: 1=AUTO  2=MANUAL  3=BYPASS
- *     [2]  frequency high byte (value in kHz)
+ *     [1]  mode: 0=STARTUP 1=AUTO 2=MANUAL 3=BYPASS 4=SETUP
+ *     [2]  frequency high byte (kHz; in STARTUP mode bytes 2-3 carry the
+ *          firmware version * 100 instead)
  *     [3]  frequency low byte
  *     [4]  capacitance step
- *     [5]  antenna port packed in bits 2-3 of the low nibble (1..3)
- *     [6]  inductance step
- *     [7]  unknown — NOT power-high: reads ~0x13 at 5 W on this firmware
- *     [8]  power low byte (watts)
- *     [9]  bits 4-7 are status flags on this firmware (0xC0 seen during TX);
- *          bits 0-3 may extend VSWR above 2.55
- *     [10] VSWR low byte (value / 100)
+ *     [5]  bits 0-1: inductance high bits · bits 2-3: antenna port (1..3)
+ *          bits 4-5: stepper-motor selection (1=IND else CAP)
+ *     [6]  inductance low byte (L is 10-bit: ((b5 & 3) << 8) | b6)
+ *     [7]  bits 0-4: power high bits · bit 5: peak-power display mode
+ *          bits 6-7: power range (0=100W 1=250W 2=1000W 3=2500W)
+ *     [8]  power low byte (watts; 13-bit: ((b7 & 0x1F) << 8) | b8)
+ *     [9]  bits 0-1: VSWR high bits · upper bits: RF-present flags
+ *     [10] VSWR low byte (VSWR = (((b9 & 3) << 8) | b10) / 100)
  *     [11] checksum — two's complement of the sum of bytes 0..10
  *
  *   Command frame — 4 bytes: 0x7A, mnemonic, value, checksum (same formula):
  *     mnemonic 0x31..0x33 ('1'..'3') = select antenna port (value 0x00)
  *     mnemonic 0x61 ('a') = AUTO mode   (value 0x00)
  *     mnemonic 0x62 ('b') = BYPASS mode (value 0x00)
- *   MANUAL mode has no known serial command — it is set on the front panel.
+ *     mnemonic 0x53/0x4C/0x56 ('S'/'L'/'V') = remote select/left/button-off
+ *   MANUAL mode has no serial command — it is set on the front panel.
+ *
+ *   Set-frequency frame — 10 bytes:
+ *     0x7A 0x74 0x00 0x00 + 5 ASCII digits (freq in Hz as "D8", first five
+ *     digits = kHz zero-padded) + checksum over the first 9 bytes.
+ *     The HF-AUTO Controller app brackets it with 'button off' (0x56) frames
+ *     and sends the first frequency after connect twice (firmware quirk:
+ *     the first one can recall wrong C/L values).
  */
 const { SerialPort } = require('serialport');
 const state = require('./state');
@@ -33,18 +44,27 @@ const state = require('./state');
 const FRAME_LEN = 12;
 const STATUS_HEADER = 0x77;
 const CMD_HEADER = 0x7a;
-const MODE_NAMES = { 1: 'AUTO', 2: 'MANUAL', 3: 'BYPASS' };
-const PEAK_HOLD_MS = 5000;
+const MODE_NAMES = { 0: 'STARTUP', 1: 'AUTO', 2: 'MANUAL', 3: 'BYPASS', 4: 'SETUP' };
+const POWER_RANGE = [100, 250, 1000, 2500];
+const RF_HANGOVER_MS = 1500; // power dips (SSB/CW) shorter than this stay in the same TX session
 
 let port = null;
 let cfg = null;
 let watchdog = null;
 let lastData = 0;
 let rxBuf = Buffer.alloc(0);
-let peakPower = 0;
-let peakTime = 0;
 let lastFrameHex = '';
 let lastFrameLog = 0;
+
+// Peak power, held per TX session (reset when the next session starts)
+let peakPower = 0;
+let txActive = false;
+let lastRfTime = 0;
+
+// Frequency tracking from the radio
+let lastSentKHz = 0;
+let freqDebounce = null;
+let firstFreqAfterConnect = true;
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -84,6 +104,8 @@ function start(config) {
       console.log(`[tuner] ${cfg.serial_port} opened at ${cfg.baud_rate || 4800} baud 8N2`);
       // The tuner's remote port expects DTR asserted before it streams status.
       port.set({ dtr: true }, () => {});
+      firstFreqAfterConnect = true;
+      lastSentKHz = 0;
       state.update('tuner', { connected: true });
       _startWatchdog();
     });
@@ -94,6 +116,7 @@ function start(config) {
 
 function stop() {
   if (watchdog) clearInterval(watchdog);
+  if (freqDebounce) clearTimeout(freqDebounce);
   if (port && port.isOpen) try { port.close(); } catch {}
 }
 
@@ -140,29 +163,37 @@ function parseStatusFrame(f) {
     }
   }
 
-  const freqKHz = (f[2] << 8) | f[3];
-  const power = f[8];
-  const swr = (((f[9] & 0x0f) << 8) | f[10]) / 100;
-  const antenna = (f[5] & 0x0f) >> 2;
+  const mode = MODE_NAMES[f[1]] || 'UNKNOWN';
+  const patch = { connected: true, online: true, mode };
 
-  // Peak-hold the power reading so short SSB/CW peaks stay visible.
-  if (power >= peakPower || Date.now() - peakTime > PEAK_HOLD_MS) {
-    peakPower = power;
-    peakTime = Date.now();
+  // Operating data is only valid in AUTO / MANUAL / BYPASS. In STARTUP the
+  // frequency bytes carry the firmware version; in SETUP they carry menu data.
+  if (f[1] >= 1 && f[1] <= 3) {
+    const power = ((f[7] & 0x1f) << 8) | f[8];
+    const now = Date.now();
+
+    // Peak power, held per TX session: reset when RF first appears, then keep
+    // the session maximum on display through RX until the next TX starts.
+    if (power > 0) {
+      if (!txActive) { txActive = true; peakPower = 0; }
+      if (power > peakPower) peakPower = power;
+      lastRfTime = now;
+    } else if (txActive && now - lastRfTime > RF_HANGOVER_MS) {
+      txActive = false;
+    }
+
+    const antenna = (f[5] >> 2) & 0x03;
+    patch.frequency = ((f[2] << 8) | f[3]) / 1000; // MHz
+    patch.capacitance = f[4];
+    patch.inductance = ((f[5] & 0x03) << 8) | f[6];
+    patch.power = power;
+    patch.peakPower = peakPower;
+    patch.powerRangeLimit = POWER_RANGE[(f[7] >> 6) & 0x03];
+    patch.swr = (((f[9] & 0x03) << 8) | f[10]) / 100;
+    if (antenna >= 1 && antenna <= 3) patch.antenna = antenna;
   }
 
-  state.update('tuner', {
-    connected: true,
-    online: true,
-    mode: MODE_NAMES[f[1]] || 'UNKNOWN',
-    frequency: freqKHz / 1000, // MHz
-    capacitance: f[4],
-    inductance: f[6],
-    antenna: antenna >= 1 && antenna <= 3 ? antenna : state.get().tuner.antenna,
-    power,
-    peakPower,
-    swr
-  });
+  state.update('tuner', patch);
 }
 
 function _startWatchdog() {
@@ -178,13 +209,18 @@ function _startWatchdog() {
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
-function _sendCmd(mnemonic, value = 0) {
-  if (!port || !port.isOpen) return;
-  const frame = Buffer.from([CMD_HEADER, mnemonic, value, 0]);
-  frame[3] = checksum(frame, 3);
+function _write(frame) {
+  if (!port || !port.isOpen) return false;
   port.write(frame, (err) => {
     if (err) console.warn('[tuner] write error:', err.message);
   });
+  return true;
+}
+
+function _sendCmd(mnemonic, value = 0) {
+  const frame = Buffer.from([CMD_HEADER, mnemonic, value, 0]);
+  frame[3] = checksum(frame, 3);
+  return _write(frame);
 }
 
 /** Select antenna port 1-3, then apply any configured force_mode rule. */
@@ -210,4 +246,55 @@ function setMode(mode) {
   return m;
 }
 
-module.exports = { start, stop, selectAntenna, setMode };
+/**
+ * Send the operating frequency so the tuner can recall stored C/L before TX.
+ * Frame: 7A 74 00 00 + 5 ASCII digits of Hz zero-padded to 8 ("D8" → kHz) + checksum.
+ */
+function setFrequency(hz) {
+  hz = Math.round(Number(hz));
+  if (!hz || hz <= 0 || hz >= 60e6) return null;
+  const t = state.get().tuner;
+  // Don't poke the tuner while the user is in the front-panel setup menus.
+  if (t.mode === 'SETUP' || t.mode === 'STARTUP') return null;
+
+  const digits = String(hz).padStart(8, '0').slice(0, 5);
+  const frame = Buffer.alloc(10);
+  frame[0] = CMD_HEADER;
+  frame[1] = 0x74; // 't'
+  for (let i = 0; i < 5; i++) frame[4 + i] = digits.charCodeAt(i);
+  frame[9] = checksum(frame, 9);
+
+  // Mirror the HF-AUTO Controller app: bracket with 'button off' frames.
+  _sendCmd(0x56);
+  if (!_write(frame)) return null;
+  _sendCmd(0x56);
+
+  lastSentKHz = Math.floor(hz / 1000);
+
+  // Firmware quirk: the first frequency sent after connecting can recall the
+  // wrong C/L values, so repeat it once (the official app does the same).
+  if (firstFreqAfterConnect) {
+    firstFreqAfterConnect = false;
+    setTimeout(() => { _sendCmd(0x56); _write(frame); _sendCmd(0x56); }, 400);
+  }
+  return hz;
+}
+
+/**
+ * Called by the FlexRadio service whenever the active slice frequency changes.
+ * Debounced (the VFO streams updates while spinning) and deduped at kHz
+ * resolution so the tuner only hears real moves.
+ */
+function notifyFrequencyMHz(mhz) {
+  const hz = Math.round(Number(mhz) * 1e6);
+  if (!hz || hz <= 0) return;
+  if (Math.floor(hz / 1000) === lastSentKHz) return;
+  if (cfg && cfg.send_frequency === false) return;
+  if (freqDebounce) clearTimeout(freqDebounce);
+  freqDebounce = setTimeout(() => {
+    const sent = setFrequency(hz);
+    if (sent) console.log(`[tuner] frequency sent: ${(hz / 1e6).toFixed(3)} MHz`);
+  }, 400);
+}
+
+module.exports = { start, stop, selectAntenna, setMode, setFrequency, notifyFrequencyMHz };

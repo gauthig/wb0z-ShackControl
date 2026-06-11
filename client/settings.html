@@ -166,6 +166,30 @@
               </select>
             </div>
           </div>
+          <label style="margin-top:10px">Antennas</label>
+          <p class="muted" style="font-size:12px;margin:4px 0 10px">
+            Name each antenna port and pick the tuner mode applied automatically when it is
+            selected (resonant antenna → Bypass, non-resonant → Auto). The mode can still be
+            overridden from the dashboard.
+          </p>
+          <div class="row">
+            <div style="flex:2"><label>Antenna 1 Name</label><input id="tuner_ant1_name" placeholder="HexBeam" /></div>
+            <div><label>Default Mode</label>
+              <select id="tuner_ant1_mode"><option value="bypass">Bypass</option><option value="auto">Auto</option></select>
+            </div>
+          </div>
+          <div class="row">
+            <div style="flex:2"><label>Antenna 2 Name</label><input id="tuner_ant2_name" placeholder="EFHW" /></div>
+            <div><label>Default Mode</label>
+              <select id="tuner_ant2_mode"><option value="bypass">Bypass</option><option value="auto">Auto</option></select>
+            </div>
+          </div>
+          <div class="row">
+            <div style="flex:2"><label>Antenna 3 Name</label><input id="tuner_ant3_name" placeholder="ZeroFive" /></div>
+            <div><label>Default Mode</label>
+              <select id="tuner_ant3_mode"><option value="bypass">Bypass</option><option value="auto">Auto</option></select>
+            </div>
+          </div>
         </div>
 
         <!-- Home Assistant -->
