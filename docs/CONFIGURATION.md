@@ -70,8 +70,9 @@ All configuration lives in the `config/` folder as plain JSON files:
 
 ---
 
-## `serial` — Palstar LA-1K amplifier
+## `serial` — Palstar LA-1K amplifier & Palstar HF-Auto tuner
 
+### Palstar LA-1K amplifier
 ```json
 "serial": {
   "palstar_la1k_amp": {
@@ -104,9 +105,43 @@ All configuration lives in the `config/` folder as plain JSON files:
 > If `serialport` cannot load or the port is missing, the amp runs in
 > **simulation mode** and the rest of the app keeps working.
 
+### Palstar HF-Auto Tuner
+Direct serial connection to the tuner's remote-control port — the HF-AUTO
+Controller / UDP-bridge software is no longer required. The tuner streams a
+12-byte binary status frame (mode, frequency, C/L, antenna port, power, VSWR)
+and accepts 4-byte commands for antenna select, AUTO and BYPASS.
+**MANUAL mode can only be selected on the front panel** — the protocol has no
+command for it.
+
+```json
+"palstar_hf_auto_tuner": {
+  "enabled": true,
+  "serial_port": "COM4",
+  "baud_rate": 4800,
+  "data_bits": 8,
+  "parity": "none",
+  "stop_bits": 2,
+  "watchdog_timeout_sec": 10,
+  "antenna_rules": { "1": {"name":"HexBeam","force_mode":"bypass"}, ... }
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `enabled` | Enable direct serial control of the tuner. |
+| `serial_port` | Windows COM port the tuner is on (e.g. `COM4`). |
+| `baud_rate`, `data_bits`, `parity`, `stop_bits` | Serial line settings — the HF-Auto requires **4800/8/N/2**. |
+| `watchdog_timeout_sec` | If no status frame within this time, the tuner is marked offline. |
+| `antenna_rules` | Friendly name per antenna and the tuner mode automatically forced when it is selected (resonant → bypass, non-resonant → auto). |
+
 ---
 
-## `udp` — PST Rotator & Palstar HF-Auto Tuner
+## `udp` — PST Rotator (legacy)
+
+> The rotator is now controlled directly over serial (see `rotator.js` /
+> `serial.erc_mini_rotator`) and the tuner over `serial.palstar_hf_auto_tuner`.
+> This section remains only because the rotator heading `presets` shown in the
+> dashboard dropdown still live here.
 
 ### PST Rotator
 ```json
@@ -131,29 +166,6 @@ All configuration lives in the `config/` folder as plain JSON files:
 | `set_azimuth_command` | Command to turn the rotator; `{degrees}` is replaced. |
 | `stop_command` | Emergency stop command. |
 | `presets` | Heading shortcuts shown in the dashboard dropdown. |
-
-### Palstar HF-Auto Tuner
-```json
-"palstar_hf_auto_tuner": {
-  "enabled": true,
-  "listen_port": 13080,
-  "send_address": "127.0.0.1",
-  "send_port": 12020,
-  "broadcast": true,
-  "watchdog_timeout_sec": 20,
-  "commands": { "select_antenna_1": "<?xml ...>", "mode_auto": "<?xml ...>", ... },
-  "antenna_rules": { "1": {"name":"HexBeam","force_mode":"bypass"}, ... }
-}
-```
-
-| Key | Meaning |
-|---|---|
-| `listen_port` | UDP port for incoming XML status (13080). |
-| `send_address` / `send_port` | Where XML commands are sent (12020). |
-| `broadcast` | Send as a UDP broadcast (matches Node-RED's broadcast mode). |
-| `watchdog_timeout_sec` | If no data within this time, the tuner is marked offline. |
-| `commands` | Raw XML command strings for antenna/mode selection. |
-| `antenna_rules` | Friendly name per antenna and the tuner mode automatically forced when it is selected (resonant → bypass, non-resonant → auto). |
 
 ---
 

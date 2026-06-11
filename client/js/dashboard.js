@@ -175,6 +175,14 @@
     // Tuner
     const t = s.tuner || {};
     setTag('tunConn', t.online, 'ONLINE', 'OFFLINE');
+    const tunMode = document.getElementById('tunMode');
+    if (tunMode) {
+      tunMode.className = 'tag ' + (t.mode === 'BYPASS' ? 'off' : 'on');
+      tunMode.textContent = t.mode || '—';
+    }
+    setText('tunFreq', t.frequency ? Number(t.frequency).toFixed(3) + ' MHz' : '—');
+    setText('tunCap', t.capacitance ?? '—');
+    setText('tunInd', t.inductance ?? '—');
     setGauge('gf_tswr', 'g_tswr', t.swr, 10, 1);
     setGauge('gf_tpwr', 'g_tpwr', t.power, 1500);
     setGauge('gf_tpeak', 'g_tpeak', t.peakPower, 1500);

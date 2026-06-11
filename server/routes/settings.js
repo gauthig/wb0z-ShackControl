@@ -2,7 +2,7 @@
  * routes/settings.js - Admin-only application settings screen backend.
  *
  * Exposes a curated, flattened view of the most commonly edited connection
- * settings (MQTT, serial, UDP rotator/tuner, FlexRadio, Home Assistant, general)
+ * settings (MQTT, serial amp/rotator/tuner, FlexRadio, Home Assistant, general)
  * and writes changes back into config.json via a safe deep-merge so unrelated
  * nested fields (protocol strings, presets, meters, etc.) are preserved.
  */
@@ -18,7 +18,7 @@ router.use(auth.requireAuth, auth.requireRole('admin'));
 function buildSettings(c) {
   const ser = (c.serial && c.serial.palstar_la1k_amp) || {};
   const rot = (c.serial && c.serial.erc_mini_rotator) || {};
-  const tun = (c.udp && c.udp.palstar_hf_auto_tuner) || {};
+  const tun = (c.serial && c.serial.palstar_hf_auto_tuner) || {};
   const ha = c.home_assistant || {};
   const ent = ha.entities || {};
 
@@ -52,9 +52,8 @@ function buildSettings(c) {
     },
     tuner: {
       enabled: !!tun.enabled,
-      send_address: tun.send_address,
-      send_port: tun.send_port,
-      listen_port: tun.listen_port
+      serial_port: tun.serial_port || 'COM4',
+      baud_rate: tun.baud_rate || 4800
     },
     flexradio: {
       enabled: !!(c.flexradio && c.flexradio.enabled),
@@ -93,19 +92,12 @@ function validate(s) {
   const ports = [
     ['General · Server port', s.general && toInt(s.general.http_port)],
     ['MQTT · Broker port', s.mqtt && toInt(s.mqtt.port)],
-    ['Tuner · Command port', s.tuner && toInt(s.tuner.send_port)],
-    ['Tuner · Status port', s.tuner && toInt(s.tuner.listen_port)],
     ['FlexRadio · Discovery port', s.flexradio && toInt(s.flexradio.discovery_port)],
     ['FlexRadio · TCP port', s.flexradio && toInt(s.flexradio.tcp_port)]
   ];
   ports.forEach(([label, v]) => {
     if (v !== undefined && !isPort(v)) errors.push(`${label} must be a number between 1 and 65535.`);
   });
-
-  const ip = /^(\d{1,3})(\.\d{1,3}){3}$/;
-  if (s.tuner && s.tuner.send_address && !ip.test(s.tuner.send_address)) {
-    errors.push('Tuner · IP address must be a valid IPv4 address.');
-  }
 
   if (s.mqtt && s.mqtt.enabled && !(s.mqtt.broker && String(s.mqtt.broker).trim())) {
     errors.push('MQTT · Broker address is required when MQTT is enabled.');
@@ -118,6 +110,10 @@ function validate(s) {
     const b = toInt(s.rotator.baud_rate);
     if (b !== undefined && (!Number.isInteger(b) || b <= 0)) errors.push('Rotator · Baud rate must be a positive number.');
   }
+  if (s.tuner) {
+    const b = toInt(s.tuner.baud_rate);
+    if (b !== undefined && (!Number.isInteger(b) || b <= 0)) errors.push('Tuner · Baud rate must be a positive number.');
+  }
   return errors;
 }
 
@@ -128,8 +124,7 @@ function applySettings(c, s) {
   c.serial = c.serial || {};
   c.serial.palstar_la1k_amp = c.serial.palstar_la1k_amp || {};
   c.serial.erc_mini_rotator = c.serial.erc_mini_rotator || {};
-  c.udp = c.udp || {};
-  c.udp.palstar_hf_auto_tuner = c.udp.palstar_hf_auto_tuner || {};
+  c.serial.palstar_hf_auto_tuner = c.serial.palstar_hf_auto_tuner || {};
   c.flexradio = c.flexradio || {};
   c.home_assistant = c.home_assistant || {};
   c.home_assistant.entities = c.home_assistant.entities || {};
@@ -172,10 +167,9 @@ function applySettings(c, s) {
     setNum(c.serial.erc_mini_rotator, 'baud_rate', s.rotator.baud_rate);
   }
   if (s.tuner) {
-    c.udp.palstar_hf_auto_tuner.enabled = !!s.tuner.enabled;
-    setIf(c.udp.palstar_hf_auto_tuner, 'send_address', s.tuner.send_address);
-    setNum(c.udp.palstar_hf_auto_tuner, 'send_port', s.tuner.send_port);
-    setNum(c.udp.palstar_hf_auto_tuner, 'listen_port', s.tuner.listen_port);
+    c.serial.palstar_hf_auto_tuner.enabled = !!s.tuner.enabled;
+    setIf(c.serial.palstar_hf_auto_tuner, 'serial_port', s.tuner.serial_port);
+    setNum(c.serial.palstar_hf_auto_tuner, 'baud_rate', s.tuner.baud_rate);
   }
   if (s.flexradio) {
     c.flexradio.enabled = !!s.flexradio.enabled;

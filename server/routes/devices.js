@@ -10,7 +10,7 @@ const auth = require('../auth');
 const state = require('../services/state');
 
 const serial = require('../services/serial');
-const udp = require('../services/udp');
+const tuner = require('../services/tuner');
 const rotator = require('../services/rotator');
 const flex = require('../services/flexradio');
 const mqtt = require('../services/mqtt');
@@ -75,18 +75,18 @@ router.post('/rotator/jog', auth.requireControl, (req, res) => {
   res.json({ ok: true, moving: true, dir });
 });
 
-// Tuner (Palstar HF-Auto)
+// Tuner (Palstar HF-Auto, direct serial)
 router.post('/tuner/antenna', auth.requireControl, (req, res) => {
-  const n = Math.max(1, Math.min(3, Number(req.body.antenna)));
-  udp.tunerSelectAntenna(n);
+  const n = tuner.selectAntenna(Number(req.body.antenna));
   res.json({ ok: true, antenna: n });
 });
 router.post('/tuner/mode', auth.requireControl, (req, res) => {
   const mode = String(req.body.mode || '').toUpperCase();
-  if (!['BYPASS', 'AUTO', 'MANUAL'].includes(mode)) {
-    return res.status(400).json({ error: 'mode must be BYPASS, AUTO or MANUAL' });
+  if (!['BYPASS', 'AUTO'].includes(mode)) {
+    // MANUAL has no known serial command — front-panel only.
+    return res.status(400).json({ error: 'mode must be BYPASS or AUTO' });
   }
-  udp.tunerSetMode(mode);
+  tuner.setMode(mode);
   res.json({ ok: true, mode });
 });
 

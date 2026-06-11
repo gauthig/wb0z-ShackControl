@@ -21,7 +21,7 @@ const logbuffer = require('./services/logbuffer');
 
 // Device services
 const serial = require('./services/serial');
-const udp = require('./services/udp');
+const tuner = require('./services/tuner');
 const rotator = require('./services/rotator');
 const mqtt = require('./services/mqtt');
 const flex = require('./services/flexradio');
@@ -79,7 +79,7 @@ websocket.init(server);
 function startServices() {
   const c = storage.getConfig();
   try { serial.start(c); } catch (e) { console.error('[serial] start error:', e.message); }
-  try { udp.start(c); } catch (e) { console.error('[udp] start error:', e.message); }
+  try { tuner.start(c); } catch (e) { console.error('[tuner] start error:', e.message); }
   try { rotator.start(c); } catch (e) { console.error('[rotator] start error:', e.message); }
   try { mqtt.start(c); } catch (e) { console.error('[mqtt] start error:', e.message); }
   try { flex.start(c); } catch (e) { console.error('[flex] start error:', e.message); }
@@ -99,7 +99,7 @@ server.listen(PORT, HOST, () => {
 function shutdown() {
   console.log('\n[server] shutting down...');
   try { serial.stop(); } catch {}
-  try { udp.stop(); } catch {}
+  try { tuner.stop(); } catch {}
   try { rotator.stop(); } catch {}
   try { mqtt.stop(); } catch {}
   try { flex.stop(); } catch {}

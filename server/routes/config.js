@@ -17,7 +17,7 @@ router.get('/public', auth.requireAuth, (req, res) => {
     site_name: c.site && c.site.site_name,
     callsign: c.site && c.site.station_callsign,
     rotator_presets: (c.udp && c.udp.pst_rotator && c.udp.pst_rotator.presets) || [],
-    tuner_antennas: (c.udp && c.udp.palstar_hf_auto_tuner && c.udp.palstar_hf_auto_tuner.antenna_rules) || {},
+    tuner_antennas: (c.serial && c.serial.palstar_hf_auto_tuner && c.serial.palstar_hf_auto_tuner.antenna_rules) || {},
     flex_meters: (c.flexradio && c.flexradio.meters) || {},
     amp_integration: (c.flexradio && c.flexradio.amp_integration) || {}
   });

@@ -66,6 +66,9 @@ const state = {
     online: false,
     mode: 'BYPASS',
     antenna: 1,
+    frequency: 0,
+    capacitance: 0,
+    inductance: 0,
     swr: 0,
     power: 0,
     peakPower: 0

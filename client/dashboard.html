@@ -149,15 +149,22 @@
       <div class="card span-6">
         <h3>📶 Palstar HF-Auto Tuner <span class="tag off" id="tunConn" style="margin-left:auto">OFFLINE</span></h3>
         <div class="row">
-          <div class="gauge"><div class="lbl"><span>SWR</span><b id="g_tswr">0</b></div><div class="track"><div class="fill accent" id="gf_tswr"></div></div></div>
-          <div class="gauge"><div class="lbl"><span>TX Watts</span><b id="g_tpwr">0</b></div><div class="track"><div class="fill" id="gf_tpwr"></div></div></div>
-          <div class="gauge"><div class="lbl"><span>Peak Power</span><b id="g_tpeak">0</b></div><div class="track"><div class="fill" id="gf_tpeak"></div></div></div>
+          <div>
+            <div class="kv"><span class="k">Mode</span><span class="v"><span class="tag off" id="tunMode">BYPASS</span></span></div>
+            <div class="kv"><span class="k">Frequency</span><span class="v" id="tunFreq">—</span></div>
+            <div class="kv"><span class="k">Capacitance</span><span class="v" id="tunCap">—</span></div>
+            <div class="kv"><span class="k">Inductance</span><span class="v" id="tunInd">—</span></div>
+          </div>
+          <div>
+            <div class="gauge"><div class="lbl"><span>SWR</span><b id="g_tswr">0</b></div><div class="track"><div class="fill accent" id="gf_tswr"></div></div></div>
+            <div class="gauge"><div class="lbl"><span>TX Watts</span><b id="g_tpwr">0</b></div><div class="track"><div class="fill" id="gf_tpwr"></div></div></div>
+            <div class="gauge"><div class="lbl"><span>Peak Power</span><b id="g_tpeak">0</b></div><div class="track"><div class="fill" id="gf_tpeak"></div></div></div>
+          </div>
         </div>
-        <label>Tuner Mode</label>
+        <label>Tuner Mode <span style="font-weight:normal;opacity:.6">(Manual is front-panel only)</span></label>
         <div class="btn-group" id="tunModeGroup">
           <button class="ctl" data-act="tunmode" data-mode="BYPASS">Bypass</button>
           <button class="ctl" data-act="tunmode" data-mode="AUTO">Auto</button>
-          <button class="ctl" data-act="tunmode" data-mode="MANUAL">Manual</button>
         </div>
         <label>Antenna Selection</label>
         <div class="btn-group" id="tunAntGroup"></div>

@@ -139,6 +139,29 @@
           "8": "Fault Temp"
         }
       }
+    },
+    "palstar_hf_auto_tuner": {
+      "enabled": true,
+      "serial_port": "COM4",
+      "baud_rate": 4800,
+      "data_bits": 8,
+      "parity": "none",
+      "stop_bits": 2,
+      "watchdog_timeout_sec": 10,
+      "antenna_rules": {
+        "1": {
+          "name": "HexBeam",
+          "force_mode": "bypass"
+        },
+        "2": {
+          "name": "EFHW",
+          "force_mode": "auto"
+        },
+        "3": {
+          "name": "ZeroFive",
+          "force_mode": "auto"
+        }
+      }
     }
   },
   "udp": {
@@ -190,37 +213,6 @@
           "value": 66
         }
       ]
-    },
-    "palstar_hf_auto_tuner": {
-      "enabled": true,
-      "listen_port": 13080,
-      "send_address": "127.0.0.1",
-      "send_port": 12020,
-      "protocol": "udp4",
-      "broadcast": true,
-      "watchdog_timeout_sec": 20,
-      "commands": {
-        "select_antenna_1": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT1</CMD></EXT_CMD>",
-        "select_antenna_2": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT2</CMD></EXT_CMD>",
-        "select_antenna_3": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>ANT3</CMD></EXT_CMD>",
-        "mode_bypass": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>BYPASS</CMD></EXT_CMD>",
-        "mode_auto": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>AUTO</CMD></EXT_CMD>",
-        "mode_manual": "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><EXT_CMD><CMD>MANUAL</CMD></EXT_CMD>"
-      },
-      "antenna_rules": {
-        "1": {
-          "name": "HexBeam",
-          "force_mode": "bypass"
-        },
-        "2": {
-          "name": "EFHW",
-          "force_mode": "auto"
-        },
-        "3": {
-          "name": "ZeroFive",
-          "force_mode": "auto"
-        }
-      }
     }
   },
   "mqtt": {
