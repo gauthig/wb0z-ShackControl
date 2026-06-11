@@ -103,6 +103,11 @@
     "tcp_port": 4992
   },
   "serial": {
+    "erc_mini_rotator": {
+      "enabled": true,
+      "serial_port": "COM5",
+      "baud_rate": 9600
+    },
     "palstar_la1k_amp": {
       "enabled": true,
       "serial_port": "COM7",
@@ -148,7 +153,7 @@
       "parity": "none",
       "stop_bits": 2,
       "watchdog_timeout_sec": 10,
-      "debug_frames": true,
+      "debug_frames": false,
       "send_frequency": true,
       "antenna_rules": {
         "1": {

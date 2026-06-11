@@ -27,7 +27,10 @@ let jogDir = null; // track active direction so heartbeats don't resend M
 // ---------------------------------------------------------------------------
 function start(config) {
   cfg = config && config.serial && config.serial.erc_mini_rotator;
-  if (!cfg || !cfg.enabled) return;
+  if (!cfg || !cfg.enabled) {
+    console.warn('[rotator] serial.erc_mini_rotator missing or disabled in config.json — service not started');
+    return;
+  }
 
   try {
     port = new SerialPort({

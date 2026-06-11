@@ -71,7 +71,10 @@ let firstFreqAfterConnect = true;
 // ---------------------------------------------------------------------------
 function start(config) {
   cfg = config && config.serial && config.serial.palstar_hf_auto_tuner;
-  if (!cfg || !cfg.enabled) return;
+  if (!cfg || !cfg.enabled) {
+    console.warn('[tuner] serial.palstar_hf_auto_tuner missing or disabled in config.json — service not started');
+    return;
+  }
 
   try {
     port = new SerialPort({
