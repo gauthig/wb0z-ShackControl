@@ -49,6 +49,12 @@ router.post('/amp/antenna', auth.requireControl, (req, res) => {
   res.json({ ok: true, antenna: n });
 });
 
+// Log all rotator POST requests before auth (diagnostic)
+router.use('/rotator', (req, res, next) => {
+  console.log('[rotator route] ' + req.method + ' ' + req.path + ' auth:' + (req.headers.authorization ? 'yes' : 'NO'));
+  next();
+});
+
 // Rotator (ERC-Mini serial)
 router.post('/rotator/azimuth', auth.requireControl, (req, res) => {
   const d = rotator.setAzimuth(Number(req.body.degrees));
