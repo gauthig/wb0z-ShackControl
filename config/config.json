@@ -130,7 +130,7 @@
         "operate_command": "AM1;\r\n",
         "standby_command": "AM2;\r\n",
         "antenna_select_command": "AA{n};\r\n",
-        "frequency_command": "AD{freq_khz};\r\n",
+        "frequency_command": "FA{freq_hz_11};\r\n",
         "band_codes": {
           "0": "",
           "1": "160m",

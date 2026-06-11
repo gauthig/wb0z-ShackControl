@@ -213,6 +213,7 @@ function setFrequency(khz) {
   const cmd = proto.frequency_command
     .replace('{freq_khz}', String(k))
     .replace('{freq_padded_8}', String(k).padStart(8, '0'))
+    .replace('{freq_hz_11}', String(k * 1000).padStart(11, '0'))
     .replace('{freq_mhz}', (k / 1000).toFixed(3));
   if (cfg.debug_raw) console.log('[serial] tx freq:', JSON.stringify(cmd));
   write(cmd);
