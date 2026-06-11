@@ -192,17 +192,44 @@ function selectAntenna(n) {
   return n;
 }
 
+/**
+ * Send the operating frequency so the amp can pre-select the band filter before
+ * TX (the amp is otherwise RF-sensing and only learns the band on first key-up).
+ * The command template supports {freq_khz}, {freq_mhz} and {freq_padded_8}.
+ */
 function setFrequency(khz) {
   const proto = cfg && cfg.protocol;
-  if (proto && proto.frequency_command) {
-    const padded = String(Math.round(khz)).padStart(8, '0');
-    write(proto.frequency_command.replace('{freq_padded_8}', padded));
-  }
+  if (!proto || !proto.frequency_command) return;
+  const k = Math.round(khz);
+  if (!k || k <= 0) return;
+  const cmd = proto.frequency_command
+    .replace('{freq_khz}', String(k))
+    .replace('{freq_padded_8}', String(k).padStart(8, '0'))
+    .replace('{freq_mhz}', (k / 1000).toFixed(3));
+  if (cfg.debug_raw) console.log('[serial] tx freq:', JSON.stringify(cmd));
+  write(cmd);
+  lastSentKHz = k;
+}
+
+/**
+ * Called by the FlexRadio service when the active-slice frequency changes.
+ * Debounced (the VFO streams updates while spinning) and deduped at kHz so the
+ * amp only hears real band moves. Disabled unless serial.send_frequency is set.
+ */
+let lastSentKHz = 0;
+let freqDebounce = null;
+function notifyFrequencyMHz(mhz) {
+  if (!cfg || !cfg.send_frequency) return;
+  const khz = Math.round(Number(mhz) * 1000);
+  if (!khz || khz <= 0 || khz === lastSentKHz) return;
+  if (freqDebounce) clearTimeout(freqDebounce);
+  freqDebounce = setTimeout(() => setFrequency(khz), 400);
 }
 
 function stop() {
   if (pollTimer) clearInterval(pollTimer);
+  if (freqDebounce) clearTimeout(freqDebounce);
   if (port && port.isOpen) port.close();
 }
 
-module.exports = { start, stop, setMode, selectAntenna, setFrequency };
+module.exports = { start, stop, setMode, selectAntenna, setFrequency, notifyFrequencyMHz };

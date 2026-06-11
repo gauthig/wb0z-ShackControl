@@ -118,6 +118,7 @@
         "3": "ZeroFive"
       },
       "debug_raw": true,
+      "send_frequency": true,
       "data_bits": 8,
       "parity": "none",
       "stop_bits": 1,
@@ -129,7 +130,7 @@
         "operate_command": "AM1;\r\n",
         "standby_command": "AM2;\r\n",
         "antenna_select_command": "AA{n};\r\n",
-        "frequency_command": "IF{freq_padded_8};\r\n",
+        "frequency_command": "AD{freq_khz};\r\n",
         "band_codes": {
           "0": "",
           "1": "160m",

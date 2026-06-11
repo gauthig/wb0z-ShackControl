@@ -30,6 +30,7 @@ const dgram = require('dgram');
 const net = require('net');
 const state = require('./state');
 const tuner = require('./tuner');
+const serial = require('./serial');
 
 let cfg = null;
 let discoverySock = null;
@@ -209,7 +210,11 @@ function handleLine(line) {
       const fr = state.get().flexradio;
       if (key === fr.activeSlice) {
         const freq = patch.freq !== undefined ? patch.freq : (fr.slices[key] && fr.slices[key].freq);
-        if (freq) tuner.notifyFrequencyMHz(freq);
+        if (freq) {
+          tuner.notifyFrequencyMHz(freq);
+          // Pre-feed the amp too so it can pre-select its band filter before TX.
+          serial.notifyFrequencyMHz(freq);
+        }
       }
     }
     return;
