@@ -20,6 +20,7 @@ let port = null;
 let pollTimer = null;
 let cfg = null;
 let buffer = '';
+let lastLoggedSig = '';
 
 function tryLoadLib() {
   if (SerialPortLib) return true;
@@ -142,7 +143,14 @@ function bandFromMHz(mhz) {
 function parseResponse(line) {
   const f = line.split(';').map((s) => s.trim());
   if (cfg.debug_raw) {
-    console.log(`[serial] rx record (${f.length} fields):`, JSON.stringify(f));
+    // The amp streams ~9 records/sec and field 13 is just an activity spinner
+    // (| / - \) that changes every frame. Log only when something meaningful
+    // changes, otherwise the spinner floods the log buffer in seconds.
+    const sig = f.filter((_, i) => i !== 13).join(';');
+    if (sig !== lastLoggedSig) {
+      console.log(`[serial] rx record (${f.length} fields):`, JSON.stringify(f));
+      lastLoggedSig = sig;
+    }
   }
   if (f.length < 13) return;
   const proto = cfg.protocol;
