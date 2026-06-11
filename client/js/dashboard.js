@@ -279,28 +279,35 @@
     catch (err) { alert(err.message); }
   });
 
-  /* ---------- Rotator jog buttons (hold-to-move) ----------
-   * While held, sends a heartbeat every 800 ms so the server-side 2-second
-   * watchdog keeps the rotator moving. Releasing (or leaving the button)
-   * sends an explicit stop command.
+  /* ---------- Rotator jog buttons (click-to-start / click-to-stop) ----------
+   * First click starts jogging and sends a heartbeat every 800 ms to keep
+   * the server-side 2-second watchdog satisfied. Clicking the active button
+   * again, clicking the other direction, or pressing Stop all stop movement.
+   * The button turns highlighted (active class) while jogging.
    */
   (function () {
     let _jogTimer = null;
     let _activeDir = null;
 
     function startJog(dir) {
-      if (!canControl || _activeDir === dir) return;
+      if (!canControl) return;
+      // Stop any existing jog first
+      if (_activeDir) _doStop();
       _activeDir = dir;
+      document.getElementById(dir === 'cw' ? 'jogCWBtn' : 'jogCCWBtn').classList.add('active');
       const beat = () => API.post('/api/devices/rotator/jog', { dir }).catch(() => {});
       beat();
       _jogTimer = setInterval(beat, 800);
     }
 
-    function stopJog() {
-      if (!_activeDir) return;
-      _activeDir = null;
+    function _doStop() {
       clearInterval(_jogTimer);
       _jogTimer = null;
+      const prev = _activeDir;
+      _activeDir = null;
+      if (prev) {
+        document.getElementById(prev === 'cw' ? 'jogCWBtn' : 'jogCCWBtn').classList.remove('active');
+      }
       API.post('/api/devices/rotator/jog', { dir: 'stop' }).catch(() => {});
     }
 
@@ -308,14 +315,14 @@
       const btn = document.getElementById(id);
       if (!btn) return;
       const dir = btn.dataset.jog;
-
-      btn.addEventListener('mousedown',   (e) => { e.preventDefault(); startJog(dir); });
-      btn.addEventListener('touchstart',  (e) => { e.preventDefault(); startJog(dir); }, { passive: false });
-      btn.addEventListener('mouseup',     stopJog);
-      btn.addEventListener('mouseleave',  stopJog);
-      btn.addEventListener('touchend',    stopJog);
-      btn.addEventListener('touchcancel', stopJog);
+      btn.addEventListener('click', () => {
+        if (!canControl) return;
+        if (_activeDir === dir) { _doStop(); } else { startJog(dir); }
+      });
     });
+
+    // Stop button also kills an active jog
+    document.querySelector('[data-act="rotstop"]').addEventListener('click', _doStop, true);
   })();
 
   /* ---------- Change password modal ---------- */

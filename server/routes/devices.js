@@ -63,6 +63,7 @@ router.post('/rotator/stop', auth.requireControl, (req, res) => {
 // watchdog auto-stops the rotator if no heartbeat arrives within 2 s.
 router.post('/rotator/jog', auth.requireControl, (req, res) => {
   const dir = String(req.body.dir || '').toLowerCase();
+  console.log('[rotator/jog] dir=' + dir);
   if (dir === 'stop') {
     rotator.stopRotator();
     return res.json({ ok: true, moving: false });
