@@ -18,9 +18,12 @@ const state = require('./state');
 let SerialPortLib = null;
 let port = null;
 let pollTimer = null;
+let watchdogTimer = null;
 let cfg = null;
 let buffer = '';
 let lastLoggedSig = '';
+let lastDataMs = 0;
+const DATA_TIMEOUT_MS = 5000; // mark offline after 5 s of silence
 
 function tryLoadLib() {
   if (SerialPortLib) return true;
@@ -65,8 +68,10 @@ function open() {
         return;
       }
       console.log(`[serial] Opened ${cfg.serial_port} @ ${cfg.baud_rate}`);
+      lastDataMs = Date.now();
       state.update('amp', { connected: true });
       startPolling();
+      startWatchdog();
     });
 
     port.on('data', (data) => {
@@ -88,6 +93,7 @@ function open() {
     });
 
     port.on('close', () => {
+      stopWatchdog();
       state.update('amp', { connected: false });
       scheduleReopen();
     });
@@ -101,6 +107,25 @@ function open() {
 function scheduleReopen() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   setTimeout(() => { if (cfg && cfg.enabled) open(); }, 5000);
+}
+
+function startWatchdog() {
+  stopWatchdog();
+  watchdogTimer = setInterval(() => {
+    const stale = Date.now() - lastDataMs > DATA_TIMEOUT_MS;
+    const cur = state.get().amp || {};
+    if (stale && cur.connected) {
+      console.log('[serial] no data from amp — marking offline');
+      state.update('amp', { connected: false });
+    } else if (!stale && !cur.connected && port && port.isOpen) {
+      console.log('[serial] amp data resumed — marking online');
+      state.update('amp', { connected: true });
+    }
+  }, 1000);
+}
+
+function stopWatchdog() {
+  if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; }
 }
 
 function startPolling() {
@@ -141,6 +166,7 @@ function bandFromMHz(mhz) {
  *   14 1.09E     firmware version
  */
 function parseResponse(line) {
+  lastDataMs = Date.now();
   const f = line.split(';').map((s) => s.trim());
   if (cfg.debug_raw) {
     // The amp streams ~9 records/sec and field 13 is just an activity spinner
@@ -237,6 +263,7 @@ function notifyFrequencyMHz(mhz) {
 
 function stop() {
   if (pollTimer) clearInterval(pollTimer);
+  stopWatchdog();
   if (freqDebounce) clearTimeout(freqDebounce);
   if (port && port.isOpen) port.close();
 }
