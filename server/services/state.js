@@ -22,7 +22,7 @@ const state = {
     clientName: '',
     txStatus: 'RECEIVE',
     rfpower: 0,
-    apd: { enable: 0, configurable: 0, equalizer_active: 0 },
+    apd: { enable: 0, configurable: 0, equalizer_active: 0, status: 'off' },
     activeSlice: 'A',
     slices: {
       A: { freq: 0, mode: '', active: 1 },

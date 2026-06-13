@@ -145,17 +145,12 @@
     e.textContent = Math.round(r) + ' RPM';
     setValClass(e, r > 2500 ? 'val-bad' : r > 1600 ? 'val-warn' : 'val-ok');
   }
-  /* Derive APD phase: off | calibrating | calibrated.
-     Prefer an explicit `state` field if the radio sends one; otherwise fall
-     back to equalizer_active (the predistortion correction being live). */
+  /* APD phase: off | calibrating | calibrated. The server derives this into
+     `apd.status`; fall back to deriving it here if that field is missing. */
   function apdStatus(apd) {
-    if (!apd || !apd.enable) return 'off';
-    if (apd.state !== undefined) {
-      const s = String(apd.state).toLowerCase();
-      if (s.includes('calibrated')) return 'calibrated';
-      if (s.includes('calibrat')) return 'calibrating';
-      if (s.includes('active') || s.includes('done') || s.includes('complete')) return 'calibrated';
-    }
+    if (!apd) return 'off';
+    if (apd.status === 'off' || apd.status === 'calibrating' || apd.status === 'calibrated') return apd.status;
+    if (!apd.enable) return 'off';
     return apd.equalizer_active ? 'calibrated' : 'calibrating';
   }
   function renderApd(apd) {

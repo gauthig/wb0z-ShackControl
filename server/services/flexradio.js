@@ -187,9 +187,6 @@ function sendCommand(cmd) {
  *   S<handle>|... apd enable=1
  */
 function handleLine(line) {
-  // TEMP: capture any line that might carry APD calibration state so we can
-  // learn which status object reports calibrating -> calibrated.
-  if (/predist|calibr|equal|\bapd\b/i.test(line)) console.log('[flex][cap] ' + line);
   // Meter definitions (build the meter_id -> metadata map).
   if (/\|meter\s/i.test(line) || /^meter\s/i.test(line)) {
     parseMeterDefs(line);
@@ -228,7 +225,6 @@ function handleLine(line) {
   // detailed one carries the TX audio passband (and `state=` arrives on PTT
   // changes), so handle any `transmit ` line and pick out whatever is present.
   if (/(^|\|)transmit\s/i.test(line)) {
-    console.log('[flex][tx][raw] ' + line);   // TEMP: confirm APD/calibration fields on transmit
     const txProps = parseHashKeyVals(line);
     const txPatch = {};
     if (txProps.state) txPatch.txStatus = txProps.state.toUpperCase();
@@ -239,18 +235,31 @@ function handleLine(line) {
     if (Object.keys(txPatch).length) state.update('flexradio', txPatch);
     return;
   }
-  // APD (Adaptive Pre-Distortion). Capture every field the radio sends so the
-  // UI can show Off / Calibrating / Calibrated. The exact field that signals
-  // the calibration phase is confirmed via the [flex][apd][raw] log below.
-  if (/\bapd\b/i.test(line) && /\benable=/i.test(line)) {
-    console.log('[flex][apd][raw] ' + line);   // TEMP: confirm calibrating/calibrated fields
-    const apdStr = line.replace(/^.*?\bapd\b\s*/i, '');
-    const props = parseHashKeyVals(apdStr);
+  // APD (Adaptive Pre-Distortion). Calibration state is spread across several
+  // `apd ...` sub-objects: `apd enable=N` is the master on/off, while the
+  // per-slice / per-antenna lines carry `equalizer_active=N` (1 once the
+  // current band is calibrated). Some firmwares instead report a ready-made
+  // `apd_status=off|calibrating|calibrated`, so honor that if present. We pull
+  // each field from whichever line carries it, then derive a single `status`.
+  if (/\bapd\b/i.test(line) || /\bapd_status=/i.test(line)) {
     const patch = {};
-    for (const [k, v] of Object.entries(props)) {
-      patch[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+    const mRep = line.match(/\bapd_status=(\w+)/i);
+    if (mRep) patch.reported = mRep[1].toLowerCase();
+    const mEn = line.match(/(?:^|\s)enable=(\d)/i);
+    if (mEn) patch.enable = parseInt(mEn[1], 10);
+    const mEq = line.match(/\bequalizer_active=(\d)/i);
+    if (mEq) patch.equalizer_active = parseInt(mEq[1], 10);
+    const mCfg = line.match(/\bconfigurable=(\d)/i);
+    if (mCfg) patch.configurable = parseInt(mCfg[1], 10);
+    if (Object.keys(patch).length) {
+      state.update('flexradio', { apd: patch });
+      const apd = state.get().flexradio.apd;
+      let status;
+      if (!apd.enable) status = 'off';
+      else if (apd.reported === 'calibrating' || apd.reported === 'calibrated') status = apd.reported;
+      else status = apd.equalizer_active ? 'calibrated' : 'calibrating';
+      if (status !== apd.status) state.update('flexradio', { apd: { status } });
     }
-    if (Object.keys(patch).length) state.update('flexradio', { apd: patch });
   }
 }
 
@@ -415,7 +424,14 @@ function setRfPower(percent) {
 
 function toggleApd(enable) {
   sendCommand(`apd enable=${enable ? 1 : 0}`);
-  state.update('flexradio', { apd: { enable: enable ? 1 : 0 } });
+  // Optimistic status so the button reflects the click immediately; the radio
+  // then pushes the authoritative equalizer_active/status which refines it.
+  if (enable) {
+    const apd = state.get().flexradio.apd;
+    state.update('flexradio', { apd: { enable: 1, status: apd.equalizer_active ? 'calibrated' : 'calibrating' } });
+  } else {
+    state.update('flexradio', { apd: { enable: 0, status: 'off' } });
+  }
   return enable;
 }
 
