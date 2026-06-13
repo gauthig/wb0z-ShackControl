@@ -221,18 +221,21 @@ function handleLine(line) {
     }
     return;
   }
-  // TX status + optional TX filter bandwidth. Fields may be space- or
-  // '#'-delimited (see parseMeterDefs); accept both filter naming variants.
-  const txMatch = line.match(/transmit .*state=(\w+)/i);
-  if (txMatch) {
+  // TX status object. The radio may carry `state=` and/or the TX filter
+  // bandwidth on the same OR separate `transmit` lines, so handle any
+  // `transmit ` status line and pick out whatever fields are present. Fields
+  // may be space- or '#'-delimited (see parseMeterDefs); accept both filter
+  // naming variants (tx_filter_low/high and tx_filter_lo/hi).
+  if (/(^|\|)transmit\s/i.test(line)) {
     console.log('[flex][tx][raw] ' + line);                    // TEMP: confirm field names
     const txProps = parseHashKeyVals(line);
-    const txPatch = { txStatus: txMatch[1].toUpperCase() };
+    const txPatch = {};
+    if (txProps.state) txPatch.txStatus = txProps.state.toUpperCase();
     const lo = txProps.tx_filter_low ?? txProps.tx_filter_lo;
     const hi = txProps.tx_filter_high ?? txProps.tx_filter_hi;
     if (lo !== undefined) txPatch.tx_filter_lo = parseFloat(lo);
     if (hi !== undefined) txPatch.tx_filter_hi = parseFloat(hi);
-    state.update('flexradio', txPatch);
+    if (Object.keys(txPatch).length) state.update('flexradio', txPatch);
     return;
   }
   // APD
@@ -349,8 +352,11 @@ function decodeMeterPayload(buf, start, end) {
     const raw = buf.readInt16BE(p + 2);
     const def = meterDefs[id];
     if (!def) {
-      // Value before its definition arrived - log once-ish and skip.
-      console.log(`[flex][meter] value for unknown meter id=${id} raw=${raw} (definition not received yet)`);
+      // Value before its definition arrived - skip (logged only in debug mode
+      // to avoid flooding the log ring buffer at the meter stream rate).
+      if (cfg && cfg.debug_meters) {
+        console.log(`[flex][meter] value for unknown meter id=${id} raw=${raw} (definition not received yet)`);
+      }
       continue;
     }
     const topic = def.topic || `${def.src}/${def.num}/${def.nam}`;
@@ -371,11 +377,11 @@ function applyMeterValue(topic, value, def, raw) {
   let out = value;
   if (route.watts) out = dbmToWatts(value); // FWDPWR: dBm -> Watts
   out = Math.round(out * 100) / 100;        // 2-decimal precision
-  const prev = (state.get().flexradio.meters || {})[route.key];
   state.update('flexradio', { meters: { [route.key]: out } });
-  console.log(`[flex][meter] ${route.key} <- ${out} (topic=${topic}, raw=${raw}, unit=${def.unit || '?'}${route.watts ? ', dBm=' + (Math.round(value * 100) / 100) : ''})`);
-  if (prev !== undefined && prev !== out) {
-    // value change tracked above; detailed log already emitted
+  // Routine per-sample meter logging is very high rate (audio meters update
+  // ~30x/sec) and would swamp the log ring buffer, so gate it behind a flag.
+  if (cfg && cfg.debug_meters) {
+    console.log(`[flex][meter] ${route.key} <- ${out} (topic=${topic}, raw=${raw}, unit=${def.unit || '?'}${route.watts ? ', dBm=' + (Math.round(value * 100) / 100) : ''})`);
   }
 }
 
