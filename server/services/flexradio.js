@@ -235,10 +235,18 @@ function handleLine(line) {
     if (Object.keys(txPatch).length) state.update('flexradio', txPatch);
     return;
   }
-  // APD
-  const apdMatch = line.match(/apd .*enable=(\d)/i);
-  if (apdMatch) {
-    state.update('flexradio', { apd: { enable: parseInt(apdMatch[1], 10) } });
+  // APD (Adaptive Pre-Distortion). Capture every field the radio sends so the
+  // UI can show Off / Calibrating / Calibrated. The exact field that signals
+  // the calibration phase is confirmed via the [flex][apd][raw] log below.
+  if (/\bapd\b/i.test(line) && /\benable=/i.test(line)) {
+    console.log('[flex][apd][raw] ' + line);   // TEMP: confirm calibrating/calibrated fields
+    const apdStr = line.replace(/^.*?\bapd\b\s*/i, '');
+    const props = parseHashKeyVals(apdStr);
+    const patch = {};
+    for (const [k, v] of Object.entries(props)) {
+      patch[k] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+    }
+    if (Object.keys(patch).length) state.update('flexradio', { apd: patch });
   }
 }
 

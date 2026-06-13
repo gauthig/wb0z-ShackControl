@@ -51,12 +51,11 @@
         <div id="sliceRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <!-- slices A-B rendered by JS -->
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-top:10px">
+        <div style="margin-top:12px">
           <div class="kv"><span class="k">Temp</span><span class="v" id="flex_temp">—</span></div>
-          <div class="kv"><span class="k">Fan</span><span class="v" id="flex_fan">—</span></div>
-          <div class="kv"><span class="k">APD</span><span class="v"><span class="tag off" id="flex_apd">OFF</span></span></div>
-          <div class="kv"><span class="k">RX BW</span><span class="v" id="flex_rx_bw">—</span></div>
-          <div class="kv"><span class="k">TX BW</span><span class="v" id="flex_tx_bw">—</span></div>
+          <div class="kv"><span class="k">Fan Speed</span><span class="v" id="flex_fan">—</span></div>
+          <div class="kv"><span class="k">TX Filter (Lo / Hi)</span><span class="v" id="flex_tx_bw">—</span></div>
+          <div class="kv"><span class="k">APD</span><span class="v"><button class="tag-btn off" id="flex_apd" data-act="apd" title="Adaptive Pre-Distortion — click to toggle">—</button></span></div>
         </div>
       </div>
 

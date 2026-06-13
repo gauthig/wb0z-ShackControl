@@ -92,7 +92,7 @@
           <b>Slice ${s}</b><span class="tag off" id="sl_${s}_act">IDLE</span></div>
         <div class="kv"><span class="k">Freq</span><span class="v" id="sl_${s}_freq">—</span></div>
         <div class="kv"><span class="k">Mode</span><span class="v" id="sl_${s}_mode">—</span></div>
-        <div class="kv"><span class="k">RX BW</span><span class="v" id="sl_${s}_rxbw">—</span></div>`;
+        <div class="kv"><span class="k">RX Filter (Lo / Hi)</span><span class="v" id="sl_${s}_rxbw">—</span></div>`;
       sr.appendChild(div);
     });
 
@@ -118,6 +118,58 @@
   function fmtFreq(mhz) {
     if (!mhz) return '—';
     return Number(mhz).toFixed(3) + ' MHz';
+  }
+  /* Format a filter passband as "low / high Hz" (used for RX & TX bandwidth). */
+  function fmtLoHi(lo, hi) {
+    if (lo === undefined || lo === null || hi === undefined || hi === null) return '—';
+    return `${Math.round(lo)} / ${Math.round(hi)} Hz`;
+  }
+  function setValClass(el, cls) { if (el) el.className = 'v' + (cls ? ' ' + cls : ''); }
+
+  /* FlexRadio PA temperature: radio reports °C; display °F and color-code.
+     <140 °F green, 140–158 °F yellow, >158 °F red, blink at/above 180 °F. */
+  function renderTemp(c) {
+    const e = document.getElementById('flex_temp');
+    if (!e) return;
+    if (c === undefined || c === null) { e.textContent = '—'; setValClass(e, ''); e.classList.remove('blink'); return; }
+    const f = (Number(c) * 9) / 5 + 32;
+    e.textContent = Math.round(f) + ' °F';
+    setValClass(e, f > 158 ? 'val-bad' : f >= 140 ? 'val-warn' : 'val-ok');
+    e.classList.toggle('blink', f >= 180);
+  }
+  /* Fan RPM color-code: <=1600 green, 1601–2500 yellow, >2500 red. */
+  function renderFan(rpm) {
+    const e = document.getElementById('flex_fan');
+    if (!e) return;
+    if (rpm === undefined || rpm === null) { e.textContent = '—'; setValClass(e, ''); return; }
+    const r = Number(rpm);
+    e.textContent = Math.round(r) + ' RPM';
+    setValClass(e, r > 2500 ? 'val-bad' : r > 1600 ? 'val-warn' : 'val-ok');
+  }
+  /* Derive APD phase: off | calibrating | calibrated.
+     Prefer an explicit `state` field if the radio sends one; otherwise fall
+     back to equalizer_active (the predistortion correction being live). */
+  function apdStatus(apd) {
+    if (!apd || !apd.enable) return 'off';
+    if (apd.state !== undefined) {
+      const s = String(apd.state).toLowerCase();
+      if (s.includes('calibrated')) return 'calibrated';
+      if (s.includes('calibrat')) return 'calibrating';
+      if (s.includes('active') || s.includes('done') || s.includes('complete')) return 'calibrated';
+    }
+    return apd.equalizer_active ? 'calibrated' : 'calibrating';
+  }
+  function renderApd(apd) {
+    const btn = document.getElementById('flex_apd');
+    if (!btn) return;
+    const view = {
+      off:         { label: 'Off',         cls: 'off'  },
+      calibrating: { label: 'Calibrating', cls: 'warn' },
+      calibrated:  { label: 'Calibrated',  cls: 'on'   }
+    }[apdStatus(apd)];
+    btn.textContent = view.label;
+    btn.className = 'tag-btn ' + view.cls;
+    btn.disabled = !canControl;
   }
 
   /* Home Assistant sync status indicator (in the Power card header). */
@@ -165,17 +217,13 @@
       setText('sl_' + k + '_freq', fmtFreq(sl.freq));
       setText('sl_' + k + '_mode', sl.mode || '—');
       setTag('sl_' + k + '_act', sl.active === 1 || sl.active === '1', 'ACTIVE', 'IDLE');
-      const rxBw = (sl.filter_hi !== undefined && sl.filter_lo !== undefined)
-        ? Math.round(sl.filter_hi - sl.filter_lo) + ' Hz' : '—';
-      setText('sl_' + k + '_rxbw', rxBw);
+      setText('sl_' + k + '_rxbw', fmtLoHi(sl.filter_lo, sl.filter_hi));
     });
     const m = f.meters || {};
-    setText('flex_temp', m.pa_temp !== undefined ? m.pa_temp.toFixed(1) + ' °C' : '—');
-    setText('flex_fan',  m.fan_rpm !== undefined ? Math.round(m.fan_rpm) + ' RPM' : '—');
-    setTag('flex_apd', (f.apd && f.apd.enable) === 1, 'ON', 'OFF');
-    const txBw = (f.tx_filter_hi !== undefined && f.tx_filter_lo !== undefined)
-      ? Math.round(f.tx_filter_hi - f.tx_filter_lo) + ' Hz' : '—';
-    setText('flex_tx_bw', txBw);
+    renderTemp(m.pa_temp);
+    renderFan(m.fan_rpm);
+    setText('flex_tx_bw', fmtLoHi(f.tx_filter_lo, f.tx_filter_hi));
+    renderApd(f.apd || {});
 
     // Rotator
     const r = s.rotator || {};
@@ -315,6 +363,13 @@
         await API.post('/api/devices/tuner/mode', { mode: el.dataset.mode });
       } else if (act === 'tunant') {
         await API.post('/api/devices/tuner/antenna', { antenna: Number(el.dataset.ant) });
+      } else if (act === 'apd') {
+        // Off -> turn on (radio replies Calibrating or, if the band is already
+        // in memory, Calibrated). Calibrating/Calibrated -> turn off.
+        const enable = apdStatus(state.flexradio && state.flexradio.apd) === 'off';
+        el.disabled = true;
+        try { await API.post('/api/devices/flex/apd', { enable }); }
+        finally { el.disabled = !canControl; }
       }
     } catch (err) { alert(err.message); }
   });

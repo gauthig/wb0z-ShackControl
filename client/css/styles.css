@@ -142,6 +142,22 @@ input[type=range] { accent-color: var(--primary); padding: 0; }
 .tag.off { background: rgba(255,82,82,.18); color: var(--danger); }
 .tag.warn { background: rgba(255,204,51,.18); color: var(--warning); }
 
+/* Clickable status chip (e.g. the APD toggle). Off is neutral grey here,
+   unlike .tag.off which signals an error/offline state in red. */
+.tag-btn { font-size: 11px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-weight: 600; }
+.tag-btn:hover:not(:disabled) { border-color: var(--text-muted); }
+.tag-btn:disabled { cursor: default; opacity: .7; }
+.tag-btn.off  { background: rgba(154,164,178,.18); color: var(--text-muted); }  /* grey */
+.tag-btn.warn { background: rgba(255,204,51,.18); color: var(--warning); }      /* yellow */
+.tag-btn.on   { background: rgba(61,220,132,.18); color: var(--success); }      /* green */
+
+/* Threshold color-coding for numeric values (temperature / fan RPM). */
+.v.val-ok   { color: var(--success); }
+.v.val-warn { color: var(--warning); }
+.v.val-bad  { color: var(--danger); }
+@keyframes blink { 50% { opacity: 0; } }
+.blink { animation: blink 1s step-start infinite; }
+
 /* ---------- Gauges (linear bar) ---------- */
 .gauge { margin: 10px 0; }
 .gauge .lbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
