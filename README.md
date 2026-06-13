@@ -12,9 +12,9 @@ Designed to run on **Windows 11** on the same PC as your station software.
 
 | Device | Interface | What you can do |
 |---|---|---|
-| **FlexRadio 8600** | UDP discovery (4992) + TCP | View 4 slices (freq/mode/active), 10 real-time meters (FWD power, SWR, PA volts/temp, fan RPM…), set RF power, toggle APD, link watchdog |
+| **FlexRadio 8600** | UDP discovery (4992) + TCP | View slices A & B (freq/mode/active), Temp, fan RPM, RX & TX filter passband, APD on/off/calibrating/calibrated; 10 real-time meters (FWD power, SWR, PA volts/temp, fan RPM…), set RF power, link watchdog |
 | **Palstar LA-1K Amp** | Serial (COM7, 9600 8N1) | Operate/Standby, antenna 1/2/3 select, FWD power, temperature, band & key status |
-| **PST Rotator** | UDP (12000/12001, XML) | Live compass display, heading presets, manual azimuth, stop |
+| **Yaesu G-800DXA (EA4TX ERC-Mini)** | Serial (COM5, 9600 baud, GS-232B) | Live compass display, heading presets, manual azimuth, CCW/CW jog, stop |
 | **Palstar HF-Auto Tuner** | UDP (13080/12020, XML) | Antenna select, tuner mode (Bypass/Auto/Manual), SWR / TX watts / peak power, offline watchdog |
 | **Home Assistant** | MQTT (192.168.1.54:1883) | Publishes station state; power smart-plug hooks |
 
@@ -78,9 +78,11 @@ ham_radio_web_app/
 │   │   └── themes.js       #   theme storage
 │   └── services/           # device integration framework
 │       ├── state.js        #   central live state + event bus
-│       ├── serial.js       #   Palstar LA-1K (serialport)
-│       ├── udp.js          #   PST Rotator + HF-Auto Tuner (dgram)
-│       ├── mqtt.js         #   Home Assistant bridge (mqtt)
+│       ├── serial.js       #   Palstar LA-1K amp (serialport)
+│       ├── rotator.js      #   Antenna rotator ERC-Mini GS-232B (serial)
+│       ├── tuner.js        #   HF-Auto Tuner (dgram)
+│       ├── mqtt.js         #   Home Assistant MQTT state bridge
+│       ├── homeassistant.js#   HA REST control (switch.turn_on/off via token)
 │       └── flexradio.js    #   FlexRadio 8600 discovery/TCP
 ├── client/                 # Frontend (vanilla JS, no build step)
 │   ├── index.html          # login
