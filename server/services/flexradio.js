@@ -221,20 +221,17 @@ function handleLine(line) {
     }
     return;
   }
-  // TX status object. The radio may carry `state=` and/or the TX filter
-  // bandwidth on the same OR separate `transmit` lines, so handle any
-  // `transmit ` status line and pick out whatever fields are present. Fields
-  // may be space- or '#'-delimited (see parseMeterDefs); accept both filter
-  // naming variants (tx_filter_low/high and tx_filter_lo/hi).
+  // TX status object. The radio emits two `transmit` lines on subscribe; the
+  // detailed one carries the TX audio passband (and `state=` arrives on PTT
+  // changes), so handle any `transmit ` line and pick out whatever is present.
   if (/(^|\|)transmit\s/i.test(line)) {
-    console.log('[flex][tx][raw] ' + line);                    // TEMP: confirm field names
     const txProps = parseHashKeyVals(line);
     const txPatch = {};
     if (txProps.state) txPatch.txStatus = txProps.state.toUpperCase();
-    const lo = txProps.tx_filter_low ?? txProps.tx_filter_lo;
-    const hi = txProps.tx_filter_high ?? txProps.tx_filter_hi;
-    if (lo !== undefined) txPatch.tx_filter_lo = parseFloat(lo);
-    if (hi !== undefined) txPatch.tx_filter_hi = parseFloat(hi);
+    // The transmit status object reports the TX audio passband as bare
+    // `lo`/`hi` (Hz), e.g. `... lo=50 hi=3000 tx_filter_changes_allowed=1 ...`.
+    if (txProps.lo !== undefined) txPatch.tx_filter_lo = parseFloat(txProps.lo);
+    if (txProps.hi !== undefined) txPatch.tx_filter_hi = parseFloat(txProps.hi);
     if (Object.keys(txPatch).length) state.update('flexradio', txPatch);
     return;
   }
@@ -254,7 +251,6 @@ function parseMeterDefs(line) {
   // '#' (this firmware packs a meter's fields together with '#' separators, e.g.
   // `1.src=COD-#1.num=1#1.nam=MICPEAK#1.unit=dBFS#1.fps=40#`). Match each
   // field directly, stopping the value at the next space or '#'.
-  console.log('[flex][meter][raw] ' + line.slice(0, 500));     // TEMP: confirm format
   const re = /(\d+)\.(\w+)=([^\s#]*)/g;
   const touched = new Set();
   let m;
