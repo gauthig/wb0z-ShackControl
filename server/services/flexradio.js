@@ -221,13 +221,17 @@ function handleLine(line) {
     }
     return;
   }
-  // TX status + optional TX filter bandwidth
+  // TX status + optional TX filter bandwidth. Fields may be space- or
+  // '#'-delimited (see parseMeterDefs); accept both filter naming variants.
   const txMatch = line.match(/transmit .*state=(\w+)/i);
   if (txMatch) {
-    const txProps = parseKeyVals(line.replace(/^[^|]*\|/, '').replace(/^transmit\s*/, ''));
+    console.log('[flex][tx][raw] ' + line);                    // TEMP: confirm field names
+    const txProps = parseHashKeyVals(line);
     const txPatch = { txStatus: txMatch[1].toUpperCase() };
-    if (txProps.tx_filter_lo !== undefined) txPatch.tx_filter_lo = parseFloat(txProps.tx_filter_lo);
-    if (txProps.tx_filter_hi !== undefined) txPatch.tx_filter_hi = parseFloat(txProps.tx_filter_hi);
+    const lo = txProps.tx_filter_low ?? txProps.tx_filter_lo;
+    const hi = txProps.tx_filter_high ?? txProps.tx_filter_hi;
+    if (lo !== undefined) txPatch.tx_filter_lo = parseFloat(lo);
+    if (hi !== undefined) txPatch.tx_filter_hi = parseFloat(hi);
     state.update('flexradio', txPatch);
     return;
   }
@@ -243,19 +247,22 @@ function handleLine(line) {
  * meters; fields look like `<id>.src=`, `<id>.num=`, `<id>.nam=`, `<id>.unit=`.
  */
 function parseMeterDefs(line) {
-  const tokens = line.match(/\d+\.\w+=[^\s]+/g);
-  if (!tokens) return;
+  // Fields are `<id>.<field>=<value>` and may be delimited by whitespace AND/OR
+  // '#' (this firmware packs a meter's fields together with '#' separators, e.g.
+  // `1.src=COD-#1.num=1#1.nam=MICPEAK#1.unit=dBFS#1.fps=40#`). Match each
+  // field directly, stopping the value at the next space or '#'.
+  console.log('[flex][meter][raw] ' + line.slice(0, 500));     // TEMP: confirm format
+  const re = /(\d+)\.(\w+)=([^\s#]*)/g;
   const touched = new Set();
-  tokens.forEach((tok) => {
-    const m = tok.match(/^(\d+)\.(\w+)=(.+)$/);
-    if (!m) return;
+  let m;
+  while ((m = re.exec(line)) !== null) {
     const id = m[1];
     const field = m[2].toLowerCase();
     const value = m[3];
     if (!meterDefs[id]) meterDefs[id] = {};
     meterDefs[id][field] = value;
     touched.add(id);
-  });
+  }
   touched.forEach((id) => {
     const d = meterDefs[id];
     if (d.src && d.num !== undefined && d.nam) {
@@ -271,6 +278,15 @@ function parseKeyVals(str) {
     const i = kv.indexOf('=');
     if (i > 0) out[kv.slice(0, i)] = kv.slice(i + 1);
   });
+  return out;
+}
+
+/** Like parseKeyVals but tolerant of both whitespace and '#' field delimiters. */
+function parseHashKeyVals(str) {
+  const out = {};
+  const re = /([A-Za-z_]\w*)=([^\s#]*)/g;
+  let m;
+  while ((m = re.exec(str)) !== null) out[m[1]] = m[2];
   return out;
 }
 
