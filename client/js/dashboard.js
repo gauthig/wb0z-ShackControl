@@ -91,8 +91,7 @@
       div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
           <b>Slice ${s}</b><span class="tag off" id="sl_${s}_act">IDLE</span></div>
         <div class="kv"><span class="k">Freq</span><span class="v" id="sl_${s}_freq">—</span></div>
-        <div class="kv"><span class="k">Mode</span><span class="v" id="sl_${s}_mode">—</span></div>
-        <div class="kv"><span class="k">RX Filter (Lo / Hi)</span><span class="v" id="sl_${s}_rxbw">—</span></div>`;
+        <div class="kv"><span class="k">Mode</span><span class="v" id="sl_${s}_mode">—</span></div>`;
       sr.appendChild(div);
     });
 
@@ -217,11 +216,13 @@
       setText('sl_' + k + '_freq', fmtFreq(sl.freq));
       setText('sl_' + k + '_mode', sl.mode || '—');
       setTag('sl_' + k + '_act', sl.active === 1 || sl.active === '1', 'ACTIVE', 'IDLE');
-      setText('sl_' + k + '_rxbw', fmtLoHi(sl.filter_lo, sl.filter_hi));
     });
     const m = f.meters || {};
     renderTemp(m.pa_temp);
     renderFan(m.fan_rpm);
+    // RX filter of the active slice, paired with the TX filter below it.
+    const active = (f.slices && f.slices[f.activeSlice]) || {};
+    setText('flex_rx_bw', fmtLoHi(active.filter_lo, active.filter_hi));
     setText('flex_tx_bw', fmtLoHi(f.tx_filter_lo, f.tx_filter_hi));
     renderApd(f.apd || {});
 

@@ -187,6 +187,9 @@ function sendCommand(cmd) {
  *   S<handle>|... apd enable=1
  */
 function handleLine(line) {
+  // TEMP: capture any line that might carry APD calibration state so we can
+  // learn which status object reports calibrating -> calibrated.
+  if (/predist|calibr|equal|\bapd\b/i.test(line)) console.log('[flex][cap] ' + line);
   // Meter definitions (build the meter_id -> metadata map).
   if (/\|meter\s/i.test(line) || /^meter\s/i.test(line)) {
     parseMeterDefs(line);
@@ -225,6 +228,7 @@ function handleLine(line) {
   // detailed one carries the TX audio passband (and `state=` arrives on PTT
   // changes), so handle any `transmit ` line and pick out whatever is present.
   if (/(^|\|)transmit\s/i.test(line)) {
+    console.log('[flex][tx][raw] ' + line);   // TEMP: confirm APD/calibration fields on transmit
     const txProps = parseHashKeyVals(line);
     const txPatch = {};
     if (txProps.state) txPatch.txStatus = txProps.state.toUpperCase();
