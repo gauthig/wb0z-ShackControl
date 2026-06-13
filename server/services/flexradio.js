@@ -203,6 +203,8 @@ function handleLine(line) {
       if (props.RF_frequency) patch.freq = parseFloat(props.RF_frequency);
       if (props.mode) patch.mode = props.mode;
       if (props.active !== undefined) patch.active = parseInt(props.active, 10);
+      if (props.filter_lo !== undefined) patch.filter_lo = parseFloat(props.filter_lo);
+      if (props.filter_hi !== undefined) patch.filter_hi = parseFloat(props.filter_hi);
       state.update('flexradio', { slices: { [key]: patch } });
       if (props.active === '1') state.update('flexradio', { activeSlice: key });
       // Track the active slice on the HF-Auto tuner so it can recall stored
@@ -219,10 +221,14 @@ function handleLine(line) {
     }
     return;
   }
-  // TX status
+  // TX status + optional TX filter bandwidth
   const txMatch = line.match(/transmit .*state=(\w+)/i);
   if (txMatch) {
-    state.update('flexradio', { txStatus: txMatch[1].toUpperCase() });
+    const txProps = parseKeyVals(line.replace(/^[^|]*\|/, '').replace(/^transmit\s*/, ''));
+    const txPatch = { txStatus: txMatch[1].toUpperCase() };
+    if (txProps.tx_filter_lo !== undefined) txPatch.tx_filter_lo = parseFloat(txProps.tx_filter_lo);
+    if (txProps.tx_filter_hi !== undefined) txPatch.tx_filter_hi = parseFloat(txProps.tx_filter_hi);
+    state.update('flexradio', txPatch);
     return;
   }
   // APD

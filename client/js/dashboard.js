@@ -85,13 +85,14 @@
     // Slice cards A-D
     const sr = document.getElementById('sliceRow');
     sr.innerHTML = '';
-    ['A', 'B', 'C', 'D'].forEach((s) => {
+    ['A', 'B'].forEach((s) => {
       const div = document.createElement('div');
       div.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface2)';
       div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
           <b>Slice ${s}</b><span class="tag off" id="sl_${s}_act">IDLE</span></div>
         <div class="kv"><span class="k">Freq</span><span class="v" id="sl_${s}_freq">—</span></div>
-        <div class="kv"><span class="k">Mode</span><span class="v" id="sl_${s}_mode">—</span></div>`;
+        <div class="kv"><span class="k">Mode</span><span class="v" id="sl_${s}_mode">—</span></div>
+        <div class="kv"><span class="k">RX BW</span><span class="v" id="sl_${s}_rxbw">—</span></div>`;
       sr.appendChild(div);
     });
 
@@ -157,14 +158,24 @@
     setTag('ampPwrTag', s.power.ampPower);
     renderHaSync(s.home_assistant || {});
 
-    // FlexRadio slices (FlexRadio panel removed; slice strip retained)
+    // FlexRadio slices and radio stats
     const f = s.flexradio || {};
-    ['A', 'B', 'C', 'D'].forEach((k) => {
+    ['A', 'B'].forEach((k) => {
       const sl = (f.slices && f.slices[k]) || {};
       setText('sl_' + k + '_freq', fmtFreq(sl.freq));
       setText('sl_' + k + '_mode', sl.mode || '—');
       setTag('sl_' + k + '_act', sl.active === 1 || sl.active === '1', 'ACTIVE', 'IDLE');
+      const rxBw = (sl.filter_hi !== undefined && sl.filter_lo !== undefined)
+        ? Math.round(sl.filter_hi - sl.filter_lo) + ' Hz' : '—';
+      setText('sl_' + k + '_rxbw', rxBw);
     });
+    const m = f.meters || {};
+    setText('flex_temp', m.pa_temp !== undefined ? m.pa_temp.toFixed(1) + ' °C' : '—');
+    setText('flex_fan',  m.fan_rpm !== undefined ? Math.round(m.fan_rpm) + ' RPM' : '—');
+    setTag('flex_apd', (f.apd && f.apd.enable) === 1, 'ON', 'OFF');
+    const txBw = (f.tx_filter_hi !== undefined && f.tx_filter_lo !== undefined)
+      ? Math.round(f.tx_filter_hi - f.tx_filter_lo) + ' Hz' : '—';
+    setText('flex_tx_bw', txBw);
 
     // Rotator
     const r = s.rotator || {};

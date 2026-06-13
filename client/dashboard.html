@@ -45,11 +45,18 @@
         <div class="viewonly-note hidden" data-vo>View-only — controls disabled.</div>
       </div>
 
-      <!-- Slice grid (2x2) -->
+      <!-- FlexRadio -->
       <div class="card span-3">
-        <h3>🎚️ Slices</h3>
+        <h3>📻 FlexRadio</h3>
         <div id="sliceRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <!-- 4 slices A-D rendered by JS -->
+          <!-- slices A-B rendered by JS -->
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-top:10px">
+          <div class="kv"><span class="k">Temp</span><span class="v" id="flex_temp">—</span></div>
+          <div class="kv"><span class="k">Fan</span><span class="v" id="flex_fan">—</span></div>
+          <div class="kv"><span class="k">APD</span><span class="v"><span class="tag off" id="flex_apd">OFF</span></span></div>
+          <div class="kv"><span class="k">RX BW</span><span class="v" id="flex_rx_bw">—</span></div>
+          <div class="kv"><span class="k">TX BW</span><span class="v" id="flex_tx_bw">—</span></div>
         </div>
       </div>
 
